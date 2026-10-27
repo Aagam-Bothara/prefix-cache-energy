@@ -56,6 +56,9 @@ class NvmlEnergy:
     def millijoules(self):
         return self.nv.nvmlDeviceGetTotalEnergyConsumption(self.handle)
 
+    def watts(self):
+        return self.nv.nvmlDeviceGetPowerUsage(self.handle) / 1000
+
     def gpu_state(self):
         # Logged per window because on a rented GPU I can't lock clocks or the power limit,
         # so I need to be able to spot a window that ran throttled or hot after the fact.
@@ -80,6 +83,9 @@ class MockEnergy:
     def millijoules(self):
         with urllib.request.urlopen(f"{self.url}/mock_energy") as resp:
             return json.load(resp)["energy_mJ"]
+
+    def watts(self):
+        return None  # the mock only has the counter, so there's nothing to cross-check
 
     def gpu_state(self):
         return {"sm_mhz": "", "temp_c": "", "power_limit_w": "", "other_procs": ""}
@@ -232,9 +238,17 @@ def print_row(i, total, row):
 def measure_idle(meter, seconds):
     # Run this with the server up and the model loaded but no requests. That's the baseline
     # I subtract. An empty GPU with no model loaded would read lower and give the wrong number.
+    # The power reading is sampled alongside as a cross-check: if the counter is honest,
+    # its average over the same stretch should come out about the same.
     e, t = meter.millijoules(), time.time()
-    time.sleep(seconds)
-    return (meter.millijoules() - e) / 1000 / (time.time() - t)
+    samples = []
+    while time.time() - t < seconds:
+        samples.append(meter.watts())
+        time.sleep(0.5)
+    idle_w = (meter.millijoules() - e) / 1000 / (time.time() - t)
+    if samples[0] is not None:
+        print(f"idle check: counter {idle_w:.2f} W vs power reading {sum(samples) / len(samples):.2f} W")
+    return idle_w
 
 
 # ----------------------------------------------------------------------------- check
