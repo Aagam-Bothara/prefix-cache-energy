@@ -1,0 +1,42 @@
+== cache on ==
+miss L=8192: cached_tokens = [0, 0, 0, 0, 0], expected 0 -> PASS
+ hit warm-up: cached_tokens = 0 (should be 0)
+ hit L=8192: cached_tokens = [8192, 8192, 8192, 8192, 8192], expected 8192 -> PASS
+measuring idle power for 60s, don't send requests...
+idle check: counter 114.05 W vs power reading 116.27 W
+idle: 114.05 W on NVIDIA A40
+idle: 114.05 W on NVIDIA A40
+3 windows -> results_a40.csv
+[1/3] miss L=2048  out=1    c=1   rep=0  n=95      30.3s  58.5896 J/req  cached 0..0
+[2/3] miss L=2048  out=1    c=1   rep=2  n=94      30.3s  59.3100 J/req  cached 0..0
+[3/3] miss L=2048  out=1    c=1   rep=1  n=93      30.1s  59.7262 J/req  cached 0..0
+idle: 114.05 W on NVIDIA A40
+15 windows -> results_a40.csv
+[1/15] miss L=0     out=128  c=16  rep=1  n=128     31.1s  44.3315 J/req  cached 0..0
+[2/15]  hit L=2048  out=128  c=16  rep=1  n=128     32.3s  46.3576 J/req  cached 2048..2048
+[3/15]  hit L=2048  out=128  c=16  rep=0  n=128     32.3s  46.4135 J/req  cached 2048..2048
+[4/15] miss L=2048  out=128  c=16  rep=2  n=64      34.3s  98.6805 J/req  cached 0..0
+[5/15]  hit L=2048  out=128  c=16  rep=2  n=128     32.5s  46.5560 J/req  cached 2048..2048
+[6/15] miss L=0     out=128  c=16  rep=2  n=128     31.1s  44.5724 J/req  cached 0..0
+[7/15] miss L=2048  out=128  c=16  rep=0  n=64      34.4s  98.9234 J/req  cached 0..0
+[8/15] miss L=8192  out=128  c=16  rep=1  n=40      62.5s  287.6384 J/req  cached 0..0
+[9/15] miss L=8192  out=128  c=16  rep=2  n=40      62.6s  288.1668 J/req  cached 0..0
+[10/15] miss L=2048  out=128  c=16  rep=1  n=64      34.4s  99.0372 J/req  cached 0..0
+[11/15] miss L=0     out=128  c=16  rep=0  n=128     31.1s  44.6386 J/req  cached 0..0
+[12/15]  hit L=8192  out=128  c=16  rep=2  n=112     31.6s  51.9612 J/req  cached 8192..8192
+[13/15]  hit L=8192  out=128  c=16  rep=0  n=112     31.6s  52.0776 J/req  cached 8192..8192
+[14/15] miss L=8192  out=128  c=16  rep=0  n=40      62.6s  288.0284 J/req  cached 0..0
+[15/15]  hit L=8192  out=128  c=16  rep=1  n=112     31.6s  51.9356 J/req  cached 8192..8192
+noise floor
+  miss L=2048 out=1 c=1: 6 windows, 59.4106 J/req, CV 0.9%
+
+main: 30 windows used, 0 dropped for cache mismatches
+
+D(L), out=1 c=1  (E = active J/request, [95% CI])
+  L=2048  E_miss 60.3668  E_hit 11.1313  D 0.994 [0.994, 0.995]  saved/token 2.404e-02 J [2.402e-02, 2.406e-02]
+  L=8192  E_miss 224.6608  E_hit 11.6189  D 0.996 [0.996, 0.997]  saved/token 2.601e-02 J [2.596e-02, 2.603e-02]
+
+D(L), out=128 c=16  (E = active J/request, [95% CI])
+  L=2048  E_miss 98.8803  E_hit 46.4424  D 0.965 [0.961, 0.968]  saved/token 2.560e-02 J [2.551e-02, 2.569e-02]
+  L=8192  E_miss 287.9445  E_hit 51.9914  D 0.969 [0.969, 0.970]  saved/token 2.880e-02 J [2.877e-02, 2.883e-02]
+A40_DONE

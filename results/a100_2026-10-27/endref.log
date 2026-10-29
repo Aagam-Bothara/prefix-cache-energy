@@ -1,0 +1,12 @@
+miss L=8192: cached_tokens = [0, 0, 0, 0, 0], expected 0 -> PASS
+ hit warm-up: cached_tokens = 0 (should be 0)
+ hit L=8192: cached_tokens = [8192, 8192, 8192, 8192, 8192], expected 8192 -> PASS
+measuring idle power for 60s, don't send requests...
+idle check: counter 87.43 W vs power reading 87.65 W
+idle: 87.43 W on NVIDIA A100-SXM4-80GB
+idle: 87.43 W on NVIDIA A100-SXM4-80GB
+3 windows -> results.csv
+[1/3] miss L=2048  out=1    c=1   rep=0  n=206     30.1s  45.0801 J/req  cached 0..0
+[2/3] miss L=2048  out=1    c=1   rep=2  n=204     30.1s  45.5017 J/req  cached 0..0
+[3/3] miss L=2048  out=1    c=1   rep=1  n=204     30.1s  45.7664 J/req  cached 0..0
+ENDREF_DONE

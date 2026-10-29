@@ -14,6 +14,8 @@ Commands:
   check   send 5 requests per mode and print cached_tokens (run this first on a new server)
   idle    measure idle power with the model loaded
   sweep   run a shuffled grid of windows and append one CSV row per window
+  replay  replay held-out workloads (from make_workloads.py) with fixed-rate or Poisson
+          arrivals; one CSV row per window, plus every request's token counts in a JSONL file
 
 Example (cache-on server):  python harness.py sweep --modes miss,hit --L 0,512,2048,8192
 Example (cache-off server): python harness.py sweep --modes off --L 0,512,2048,8192
@@ -116,7 +118,12 @@ def expected_cached_tokens(mode, L):
 
 
 # ----------------------------------------------------------------------------- server calls
+BACKEND = "sglang"   # set from --backend; vllm is only for the PrefixBench-style reproduction
+
+
 async def send(session, url, prompt, out_tokens):
+    if BACKEND == "vllm":
+        return await send_vllm(session, url, prompt, out_tokens)
     body = {
         "input_ids": prompt,
         "sampling_params": {
@@ -135,10 +142,23 @@ async def send(session, url, prompt, out_tokens):
     return meta["cached_tokens"]
 
 
+async def send_vllm(session, url, prompt, out_tokens):
+    # vLLM's OpenAI-style endpoint takes token IDs as the prompt too. The server has to run with
+    # --served-model-name m and --enable-prompt-tokens-details, or the cached count is missing.
+    body = {"model": "m", "prompt": prompt, "max_tokens": out_tokens, "temperature": 0, "ignore_eos": True}
+    async with session.post(f"{url}/v1/completions", json=body) as resp:
+        resp.raise_for_status()
+        usage = (await resp.json())["usage"]
+    if usage["completion_tokens"] != out_tokens:
+        raise RuntimeError(f"asked for {out_tokens} output tokens, got {usage['completion_tokens']}")
+    return (usage.get("prompt_tokens_details") or {}).get("cached_tokens") or 0
+
+
 async def flush_cache(session, url):
     # Start every window from an empty cache so one window's leftovers can't turn into
-    # the next window's hits.
-    async with session.post(f"{url}/flush_cache") as resp:
+    # the next window's hits. (vLLM only has this endpoint with VLLM_SERVER_DEV_MODE=1.)
+    path = "/reset_prefix_cache" if BACKEND == "vllm" else "/flush_cache"
+    async with session.post(f"{url}{path}") as resp:
         resp.raise_for_status()
     await asyncio.sleep(1)
 
@@ -217,6 +237,88 @@ async def run_window(args, meter, mode, L, out_tokens, conc, rep, idle_w):
     }
 
 
+# ----------------------------------------------------------------------------- held-out replay
+def load_workload(path):
+    # One JSON line per request, made by make_workloads.py: {"window", "input_ids", "out"}.
+    windows = {}
+    with open(path) as f:
+        for line in f:
+            r = json.loads(line)
+            windows.setdefault(r["window"], []).append(r)
+    return windows
+
+
+async def run_replay_window(args, meter, name, reqs, window, arrival, rate, idle_w):
+    # Open loop: requests go out on a fixed schedule whether or not earlier ones are done,
+    # like real traffic. Unlike the synthetic sweep, nothing here forces a hit or a miss.
+    # Whatever the workload's structure makes reusable gets reused, and cached_tokens records it.
+    rng = random.Random(f"{name}-{window}-{arrival}-{rate}")
+    offsets, t = [], 0.0
+    for _ in reqs:
+        offsets.append(t)
+        t += 1 / rate if arrival == "fixed" else rng.expovariate(rate)
+    no_total_timeout = aiohttp.ClientTimeout(total=None, sock_read=900)
+    log = []
+
+    # force_close: with gaps between arrivals, a pooled connection can sit idle past the server's
+    # keep-alive timeout and get closed just as it's reused (ServerDisconnectedError mid-run).
+    async with aiohttp.ClientSession(timeout=no_total_timeout,
+                                     connector=aiohttp.TCPConnector(limit=0, force_close=True)) as session:
+        await flush_cache(session, args.url)
+
+        # Same warm-up as the sweep, with random filler tokens. Workload prompts all start with
+        # a chat-template token far above RAND_HI, so this can't become a cache hit for them.
+        e, t = meter.millijoules(), time.time()
+        warm = [UNIQUE_LO] + [rng.randint(RAND_LO, RAND_HI) for _ in range(args.suffix - 1)]
+        await send(session, args.url, warm, 16)
+        warmup_active_j = round((meter.millijoules() - e) / 1000 - idle_w * (time.time() - t), 4)
+        await asyncio.sleep(0.5)
+
+        state_before = meter.gpu_state()
+        e_start, t_start = meter.millijoules(), time.time()
+
+        async def one(req, offset):
+            await asyncio.sleep(max(0.0, t_start + offset - time.time()))
+            sent = time.time()
+            cached = await send(session, args.url, req["input_ids"], req["out"])
+            log.append({"prompt": len(req["input_ids"]), "cached": cached, "out": req["out"],
+                        "t_send": round(sent - t_start, 4), "t_done": round(time.time() - t_start, 4)})
+
+        await asyncio.gather(*(one(r, o) for r, o in zip(reqs, offsets)))
+        e_end, t_end = meter.millijoules(), time.time()
+        state_after = meter.gpu_state()
+
+    n = len(log)
+    seconds = t_end - t_start
+    total_j = (e_end - e_start) / 1000
+    active_j = total_j - idle_w * seconds
+    prompt = sum(r["prompt"] for r in log)
+    cached = sum(r["cached"] for r in log)
+    row = {
+        "time": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "window_id": f"{time.time_ns()}",   # joins this row to its requests in the JSONL log
+        "host": socket.gethostname(),
+        "gpu": meter.name,
+        "tag": args.tag,
+        "workload": name, "window": window, "arrival": arrival, "rate": rate,
+        "n_requests": n,
+        "prompt_tokens": prompt, "cached_tokens": cached, "out_tokens": sum(r["out"] for r in log),
+        "hit_rate": round(cached / prompt, 4),
+        "seconds": round(seconds, 3),
+        "total_j": round(total_j, 3),
+        "idle_w": round(idle_w, 3),
+        "active_j": round(active_j, 3),
+        "active_j_per_req": round(active_j / n, 5),
+        "total_j_per_req": round(total_j / n, 5),
+        "warmup_active_j": warmup_active_j,
+        "sm_mhz_start": state_before["sm_mhz"], "sm_mhz_end": state_after["sm_mhz"],
+        "temp_start": state_before["temp_c"], "temp_end": state_after["temp_c"],
+        "power_limit_w": state_before["power_limit_w"],
+        "other_procs": state_after["other_procs"],
+    }
+    return row, log
+
+
 def save_row(path, row):
     # Written after every window, so a crash or a pod shutdown loses at most one window.
     is_new = not os.path.exists(path)
@@ -275,9 +377,10 @@ def int_list(text):
 
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("cmd", choices=["check", "idle", "sweep"])
+    p.add_argument("cmd", choices=["check", "idle", "sweep", "replay"])
     p.add_argument("--url", default="http://localhost:30000")
     p.add_argument("--energy", choices=["nvml", "mock"], default="nvml")
+    p.add_argument("--backend", choices=["sglang", "vllm"], default="sglang")
     p.add_argument("--gpu", type=int, default=0)
     p.add_argument("--csv", default="results.csv")
     p.add_argument("--tag", default="", help="label for the rows, e.g. reference, pilot, main")
@@ -292,8 +395,13 @@ def main():
     p.add_argument("--min-seconds", type=float, default=30)
     p.add_argument("--idle-seconds", type=float, default=60)
     p.add_argument("--idle-watts", type=float, help="reuse an idle value measured earlier this session")
+    p.add_argument("--workloads", default="", help="replay: comma-separated JSONL files from make_workloads.py")
+    p.add_argument("--arrival", default="fixed,poisson", help="replay: fixed and/or poisson")
+    p.add_argument("--rate", default="1,4", help="replay: requests per second")
     args = p.parse_args()
 
+    global BACKEND
+    BACKEND = args.backend
     meter = MockEnergy(args.url) if args.energy == "mock" else NvmlEnergy(args.gpu)
     modes = args.modes.split(",")
 
@@ -307,6 +415,33 @@ def main():
         idle_w = measure_idle(meter, args.idle_seconds)
     print(f"idle: {idle_w:.2f} W on {meter.name}", flush=True)
     if args.cmd == "idle":
+        return
+
+    if args.cmd == "replay":
+        # Every window is replayed under every arrival pattern and rate, so the comparisons
+        # between them are matched: same requests, only the timing differs.
+        workloads = {os.path.basename(path).removesuffix(".jsonl"): load_workload(path)
+                     for path in args.workloads.split(",")}
+        runs = [(name, w, a, r) for name, wins in workloads.items() for w in sorted(wins)
+                for a in args.arrival.split(",") for r in map(float, args.rate.split(","))]
+        random.Random(args.seed).shuffle(runs)
+        if os.path.exists(args.csv):
+            # Resuming an interrupted replay: skip the windows the CSV already has.
+            with open(args.csv) as f:
+                done = {(r["workload"], int(r["window"]), r["arrival"], float(r["rate"]))
+                        for r in csv.DictReader(f)}
+            runs = [run for run in runs if run not in done]
+        req_log = args.csv.removesuffix(".csv") + "_requests.jsonl"
+        print(f"{len(runs)} replay windows -> {args.csv}, requests -> {req_log}", flush=True)
+        for i, (name, w, a, r) in enumerate(runs, 1):
+            row, log = asyncio.run(run_replay_window(args, meter, name, workloads[name][w], w, a, r, idle_w))
+            save_row(args.csv, row)
+            with open(req_log, "a") as f:
+                for req in log:
+                    f.write(json.dumps({"window_id": row["window_id"], **req}) + "\n")
+            print(f"[{i}/{len(runs)}] {name:>8} w={w} {a:>7} {r:g}/s  n={row['n_requests']}  "
+                  f"{row['seconds']:>6.1f}s  hit {100 * row['hit_rate']:.0f}%  "
+                  f"{row['active_j_per_req']:.3f} J/req", flush=True)
         return
 
     windows = [(m, L, o, c, r)

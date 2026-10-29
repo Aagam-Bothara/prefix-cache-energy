@@ -1,0 +1,6 @@
+__pycache__/
+# rebuilt by make_workloads.py in about a minute
+workloads/
+workloads_qwen3/
+# SGLang/vLLM request logs, tens of MB each; the CSVs and run logs hold the results
+results/**/server_*.log

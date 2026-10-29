@@ -1,0 +1,95 @@
+sglang 0.5.21
+=== cell out=512 conc=4 start 06:13:14
+== cache on ==
+miss L=8192: cached_tokens = [0, 0, 0, 0, 0], expected 0 -> PASS
+ hit warm-up: cached_tokens = 0 (should be 0)
+ hit L=8192: cached_tokens = [8192, 8192, 8192, 8192, 8192], expected 8192 -> PASS
+measuring idle power for 60s, don't send requests...
+idle check: counter 82.57 W vs power reading 82.84 W
+idle: 82.57 W on NVIDIA A100-SXM4-80GB
+idle: 82.57 W on NVIDIA A100-SXM4-80GB
+3 windows -> results_grid_cell4.csv
+[1/3] miss L=2048  out=1    c=1   rep=0  n=206     30.0s  45.7549 J/req  cached 0..0
+[2/3] miss L=2048  out=1    c=1   rep=2  n=205     30.0s  45.8938 J/req  cached 0..0
+[3/3] miss L=2048  out=1    c=1   rep=1  n=205     30.1s  46.0581 J/req  cached 0..0
+idle: 82.57 W on NVIDIA A100-SXM4-80GB
+33 windows -> results_grid_cell4.csv
+[1/33] miss L=1024  out=512  c=4   rep=1  n=40      54.3s  376.4128 J/req  cached 0..0
+[2/33]  hit L=512   out=512  c=4   rep=2  n=40      51.2s  351.2896 J/req  cached 512..512
+[3/33]  hit L=1024  out=512  c=4   rep=1  n=40      51.4s  348.8274 J/req  cached 1024..1024
+[4/33]  hit L=1024  out=512  c=4   rep=2  n=40      51.3s  345.8117 J/req  cached 1024..1024
+[5/33] miss L=2048  out=512  c=4   rep=1  n=40      57.5s  402.8132 J/req  cached 0..0
+[6/33] miss L=0     out=512  c=4   rep=0  n=40      51.0s  345.1090 J/req  cached 0..0
+[7/33] miss L=512   out=512  c=4   rep=2  n=40      52.5s  367.5604 J/req  cached 0..0
+[8/33]  hit L=8192  out=512  c=4   rep=0  n=40      54.1s  376.9862 J/req  cached 8192..8192
+[9/33] miss L=4096  out=512  c=4   rep=1  n=40      64.3s  457.5921 J/req  cached 0..0
+[10/33] miss L=0     out=512  c=4   rep=2  n=40      51.0s  348.2756 J/req  cached 0..0
+[11/33] miss L=4096  out=512  c=4   rep=2  n=40      64.3s  453.3971 J/req  cached 0..0
+[12/33]  hit L=4096  out=512  c=4   rep=2  n=40      52.5s  366.8005 J/req  cached 4096..4096
+[13/33]  hit L=512   out=512  c=4   rep=1  n=40      51.2s  352.1589 J/req  cached 512..512
+[14/33]  hit L=8192  out=512  c=4   rep=1  n=40      54.1s  376.8314 J/req  cached 8192..8192
+[15/33] miss L=8192  out=512  c=4   rep=2  n=40      78.8s  564.2455 J/req  cached 0..0
+[16/33] miss L=512   out=512  c=4   rep=0  n=40      52.5s  359.2052 J/req  cached 0..0
+[17/33]  hit L=1024  out=512  c=4   rep=0  n=40      51.3s  348.4642 J/req  cached 1024..1024
+[18/33]  hit L=8192  out=512  c=4   rep=2  n=40      54.1s  370.4785 J/req  cached 8192..8192
+[19/33] miss L=512   out=512  c=4   rep=1  n=40      52.5s  361.8655 J/req  cached 0..0
+[20/33]  hit L=4096  out=512  c=4   rep=1  n=40      52.5s  359.3632 J/req  cached 4096..4096
+[21/33] miss L=1024  out=512  c=4   rep=0  n=40      54.3s  376.6377 J/req  cached 0..0
+[22/33]  hit L=512   out=512  c=4   rep=0  n=40      51.2s  347.1406 J/req  cached 512..512
+[23/33] miss L=2048  out=512  c=4   rep=2  n=40      57.5s  404.6167 J/req  cached 0..0
+[24/33]  hit L=4096  out=512  c=4   rep=0  n=40      52.5s  358.1966 J/req  cached 4096..4096
+[25/33] miss L=2048  out=512  c=4   rep=0  n=40      57.5s  403.8712 J/req  cached 0..0
+[26/33]  hit L=2048  out=512  c=4   rep=1  n=40      51.7s  352.0770 J/req  cached 2048..2048
+[27/33] miss L=4096  out=512  c=4   rep=0  n=40      64.3s  452.3008 J/req  cached 0..0
+[28/33] miss L=8192  out=512  c=4   rep=0  n=40      78.8s  565.0031 J/req  cached 0..0
+[29/33] miss L=8192  out=512  c=4   rep=1  n=40      78.8s  565.3669 J/req  cached 0..0
+[30/33] miss L=1024  out=512  c=4   rep=2  n=40      54.2s  375.6791 J/req  cached 0..0
+[31/33] miss L=0     out=512  c=4   rep=1  n=40      51.0s  347.3694 J/req  cached 0..0
+[32/33]  hit L=2048  out=512  c=4   rep=2  n=40      51.8s  350.2165 J/req  cached 2048..2048
+[33/33]  hit L=2048  out=512  c=4   rep=0  n=40      51.8s  349.8066 J/req  cached 2048..2048
+== cache off ==
+ off L=8192: cached_tokens = [0, 0, 0, 0, 0], expected 0 -> PASS
+measuring idle power for 60s, don't send requests...
+idle check: counter 82.97 W vs power reading 83.26 W
+idle: 82.97 W on NVIDIA A100-SXM4-80GB
+idle: 82.97 W on NVIDIA A100-SXM4-80GB
+18 windows -> results_grid_cell4.csv
+[1/18]  off L=2048  out=512  c=4   rep=2  n=40      57.4s  391.2106 J/req  cached 0..0
+[2/18]  off L=2048  out=512  c=4   rep=0  n=40      57.4s  405.4778 J/req  cached 0..0
+[3/18]  off L=0     out=512  c=4   rep=0  n=40      51.0s  344.3830 J/req  cached 0..0
+[4/18]  off L=8192  out=512  c=4   rep=1  n=40      78.9s  564.7682 J/req  cached 0..0
+[5/18]  off L=0     out=512  c=4   rep=2  n=40      51.0s  346.9713 J/req  cached 0..0
+[6/18]  off L=8192  out=512  c=4   rep=0  n=40      78.8s  561.7231 J/req  cached 0..0
+[7/18]  off L=2048  out=512  c=4   rep=1  n=40      57.4s  402.0992 J/req  cached 0..0
+[8/18]  off L=512   out=512  c=4   rep=0  n=40      52.5s  360.9394 J/req  cached 0..0
+[9/18]  off L=512   out=512  c=4   rep=2  n=40      52.5s  361.8938 J/req  cached 0..0
+[10/18]  off L=8192  out=512  c=4   rep=2  n=40      78.8s  564.3005 J/req  cached 0..0
+[11/18]  off L=4096  out=512  c=4   rep=2  n=40      64.2s  451.4370 J/req  cached 0..0
+[12/18]  off L=1024  out=512  c=4   rep=0  n=40      54.2s  376.7333 J/req  cached 0..0
+[13/18]  off L=1024  out=512  c=4   rep=1  n=40      54.2s  376.5721 J/req  cached 0..0
+[14/18]  off L=1024  out=512  c=4   rep=2  n=40      54.2s  377.3832 J/req  cached 0..0
+[15/18]  off L=512   out=512  c=4   rep=1  n=40      52.5s  360.9449 J/req  cached 0..0
+[16/18]  off L=0     out=512  c=4   rep=1  n=40      50.9s  344.7865 J/req  cached 0..0
+[17/18]  off L=4096  out=512  c=4   rep=1  n=40      64.2s  450.9864 J/req  cached 0..0
+[18/18]  off L=4096  out=512  c=4   rep=0  n=40      64.2s  453.6257 J/req  cached 0..0
+noise floor
+  miss L=2048 out=1 c=1: 3 windows, 45.9023 J/req, CV 0.3%
+
+main: 51 windows used, 0 dropped for cache mismatches
+
+D(L), out=512 c=4  (E = active J/request, [95% CI])
+  L=512   E_miss 362.8771  E_hit 350.1963  D 0.795 [0.615, 0.975]  saved/token 2.477e-02 J [1.606e-02, 3.391e-02]
+  L=1024  E_miss 376.2432  E_hit 347.7011  D 0.973 [0.907, 1.046]  saved/token 2.787e-02 J [2.658e-02, 2.965e-02]
+  L=2048  E_miss 403.7670  E_hit 350.7000  D 0.933 [0.903, 0.964]  saved/token 2.591e-02 J [2.524e-02, 2.656e-02]
+  L=4096  E_miss 454.4300  E_hit 361.4534  D 0.865 [0.818, 0.899]  saved/token 2.270e-02 J [2.148e-02, 2.383e-02]
+  L=8192  E_miss 564.8718  E_hit 374.7654  D 0.872 [0.858, 0.892]  saved/token 2.321e-02 J [2.290e-02, 2.371e-02]
+
+delta_on = E_miss - E_off, out=512 c=4
+  L=0     +1.5377 J/req [-0.3806, +3.4560]  (+0.4% of off)
+  L=512   +1.6177 J/req [-1.8018, +6.2992]  (+0.4% of off)
+  L=1024  -0.6530 J/req [-1.2429, -0.0631]  (-0.2% of off)
+  L=2048  +4.1711 J/req [-1.5384, +12.3079]  (+1.0% of off)
+  L=4096  +2.4136 J/req [-0.2299, +5.4255]  (+0.5% of off)
+  L=8192  +1.2746 J/req [-0.1143, +3.0275]  (+0.2% of off)
+=== cell out=512 conc=4 end 07:17:00
+GRID_DONE

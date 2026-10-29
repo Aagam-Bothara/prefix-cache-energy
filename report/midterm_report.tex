@@ -1,0 +1,155 @@
+\documentclass[conference]{IEEEtran}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{cite}
+\usepackage[hidelinks]{hyperref}
+
+% Red brackets = fill in from YOUR runs before submitting. Delete this macro's uses, not the macro.
+\newcommand{\TBD}[1]{\textcolor{red}{[#1]}}
+
+\begin{document}
+
+\title{Is a Cached Token Worth It? Measuring the Energy Discount of Prefix Caching in LLM Serving\\[2pt]
+\large Midterm Report}
+
+\author{\IEEEauthorblockN{Aagam Sachin Bothara}
+\IEEEauthorblockA{Department of Computer Science, University of Illinois Chicago\\
+aboth@uic.edu}}
+
+\maketitle
+
+\section{Project Type and Status}
+This is a research project (individual). The question is unchanged: how much GPU energy does reusing a cached prefix actually save in SGLang~\cite{sglang}, and does an accounting model with an explicit cached-token cost predict energy better than cache-unaware, pricing-inspired, and FLOP-informed baselines? Table~\ref{tab:status} compares progress against the proposal milestones. The main change since the proposal is a precise definition of the experimental conditions (Section~\ref{sec:conditions}), written in response to the feedback that the cache-on versus cache-off comparison was unclear.
+
+\begin{table}[t]
+\caption{Progress against proposal milestones}
+\label{tab:status}
+\centering
+\footnotesize
+\begin{tabular}{@{}p{4.3cm}l@{}}
+\toprule
+Milestone (proposal) & Status at Nov 1 \\
+\midrule
+Harness, cache controls, noise floor & done \\
+Hit/miss verification per request & done \\
+Zero-hit control (cache on, no reuse) & done \\
+$D(L)$ sweep, Qwen-7B, 1-token out & done \\
+Full grid (out 128/512, conc.\ 4/16) & done: 4 of 4 cells \\
+PrefixBench-style vLLM reproduction & moved to Nov 2--8 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Clarifying the Experimental Conditions}
+\label{sec:conditions}
+The proposal used ``cache on'' and ``cache off'' loosely. Those words hide three separate things: whether the radix cache is enabled, whether a request's prefix is actually found in it, and side effects of the flag itself. I now separate them into three conditions (Table~\ref{tab:cond}). In all of them the normal per-request KV cache used during decoding stays on; only cross-request prefix reuse changes.
+
+\begin{table}[t]
+\caption{Measurement conditions. $L$ = shared-prefix length; last column is the expected \texttt{cached\_tokens} per request.}
+\label{tab:cond}
+\centering
+\footnotesize
+\begin{tabular}{@{}p{1.05cm}p{1.55cm}p{3.0cm}p{1.2cm}@{}}
+\toprule
+Name & Radix cache & Prefix contents & Expected \\
+\midrule
+\textsc{Off}  & disabled & identical across requests & 0 \\
+\textsc{Miss} & enabled  & first token replaced by a per-request unique token, so no request matches another & 0 \\
+\textsc{Hit}  & enabled  & identical; warmed by one excluded request & $L$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Primary contrast: \textsc{Hit} vs.\ \textsc{Miss}.} Both run on the same server process with the same flags and the same token counts. The only difference is whether the prefix is found in the cache, so their energy difference is the value of reuse and nothing else. I redefine the discount as
+\begin{equation}
+D(L) = \frac{E_{\textsc{miss}}(L) - E_{\textsc{hit}}(L)}{E_{\textsc{miss}}(L) - E_{\textsc{miss}}(0)},
+\label{eq:d}
+\end{equation}
+where $E$ is mean active GPU energy per request, and suffix length, output length, and concurrency are held fixed. $E_{\textsc{miss}}(0)$ is measured with the prefix removed. I also report energy saved per reused token, $(E_{\textsc{miss}}(L)-E_{\textsc{hit}}(L))/L$.
+
+\textbf{Secondary contrast: \textsc{Miss} vs.\ \textsc{Off}.} This is the zero-hit control from the proposal. It measures what enabling the cache costs when nothing is reused, $\Delta_{\text{on}}(L)=E_{\textsc{miss}}(L)-E_{\textsc{off}}(L)$, from tree insertion, matching, and eviction. If $\Delta_{\text{on}}$ is indistinguishable from zero, the ``turn caching on'' saving equals the reuse saving. If it is not, I report both. Zine et al.~\cite{zine} saw energy differences from the prefix-cache flag on a workload with no repeated prefixes, which is exactly the effect this control isolates.
+
+\textbf{Confounders held fixed.} (1) \emph{Scheduling policy.} When the radix cache is disabled, SGLang silently replaces cache-aware policies such as LPM with FCFS (\texttt{schedule\_policy.py}, \texttt{\_validate\_and\_adjust\_policy}). Without care, \textsc{Off} vs.\ \textsc{Hit} would compare two schedulers. I pin \texttt{-{}-schedule-policy fcfs} in every condition. (2) \emph{Exact token counts.} Requests are sent as token IDs to \texttt{/generate}, with no chat template, so prefix and suffix lengths are exact and no template tokens are accidentally shared. Each suffix also starts with a per-request unique token; with purely random tokens, two requests in a window can share a first token by chance and create a spurious 1-token hit. (3) \emph{Fixed work.} \texttt{ignore\_eos} with fixed \texttt{max\_new\_tokens}, greedy decoding, fixed chunked-prefill size, page size 1, and CUDA graphs on. (4) \emph{Cache state.} \texttt{/flush\_cache} before every window, then one excluded warm-up request in every condition, so all three pay the same first-request cost; in \textsc{Hit} this request also inserts the prefix. Its energy is recorded separately.
+
+\textbf{Verification.} Every response's \texttt{meta\_info.cached\_tokens} is logged. A window is accepted only if every request matches its condition's expected count in Table~\ref{tab:cond}. Across all 273 A100 windows (25{,}915 \textsc{Hit} requests and 32{,}110 \textsc{Miss} and \textsc{Off} requests), every \textsc{Hit} request reported exactly $L$ cached tokens and every \textsc{Miss} and \textsc{Off} request reported 0, so no window was rejected.
+
+\section{Measurement Setup as Built}
+\textbf{Platform.} All Chameleon Cloud GPUs were reserved through November, so the main study runs on a rented RunPod A100 80\,GB SXM4, Secure Cloud, a whole GPU per pod, driver 595.91.07, CUDA 13.2, SGLang 0.5.21 (pinned), with the same pod configuration in every session. Before any run, I checked that NVML's energy counter agrees with its instantaneous power reading at idle (87.11\,W vs.\ 87.52\,W). I cannot lock clocks or the power limit on a rented pod, so I log both per window and repeat a fixed reference window at the start of every session to detect drift between sessions and physical GPUs. Model: Qwen2.5-7B-Instruct, BF16. RunPod does not offer the A30, so an A40 (48\,GB) serves as the second GPU. A short pilot on the A40 ran at its 300\,W power cap in every window, so it is used only for spot checks.
+
+\textbf{Harness.} A closed-loop load generator holds $c$ requests in flight and runs windows of at least 40 requests \emph{and} at least 30\,s, so short 1-token windows are not dominated by counter resolution. The harness reads NVML's cumulative energy counter directly at window boundaries. (My llmtrace tool samples power and only supports vLLM, so it is not used for the SGLang runs.) Active energy subtracts idle power (measured for 60\,s with the model loaded, before each block) times window duration. Run order is randomized across conditions and $L$. Each window logs SM clock, temperature, power limit, and any other GPU process.
+
+\section{Preliminary Results}
+
+\textbf{Noise floor.} Three repeats of an identical \textsc{Miss} window ($L{=}2048$, 1-token output, $c{=}1$) gave a coefficient of variation of 0.8\% in active energy per request. This sets the smallest saving I can resolve with three repeats. The same reference window gave 45.50\,J per request on the first A100 and 45.90\,J on the second, a 0.9\% difference, about the size of the noise floor.
+
+\textbf{Zero-hit control.} $\Delta_{\text{on}}$ was +0.34\,J per request (95\% CI [$-0.39$, $+0.83$]) at $L{=}8192$, i.e., within the noise floor. Across all $L$ in the 1-token sweep, $\Delta_{\text{on}}$ stayed within $+0.9\%$ of $E_{\textsc{off}}$, and within $+2.7\%$ across the full grid (usually within 1\%). One caveat: \textsc{Miss} and \textsc{Off} need different server flags, so they run on two server processes, and a small $\Delta_{\text{on}}$ could partly be a restart effect.
+
+\begin{table}[t]
+\caption{Preliminary $D(L)$: Qwen2.5-7B, A100, 1-token output, $c{=}1$. Mean of 3 windows; 95\% bootstrap CI.}
+\label{tab:dl}
+\centering
+\footnotesize
+\begin{tabular}{@{}rcccc@{}}
+\toprule
+$L$ & $E_{\textsc{miss}}$ (J) & $E_{\textsc{hit}}$ (J) & $D(L)$ & J saved / token \\
+\midrule
+512  & 15.55  & 6.73 & 0.986 {\scriptsize[0.983, 0.988]} & 0.0172 \\
+1024 & 27.28  & 6.76 & 0.993 {\scriptsize[0.992, 0.993]} & 0.0200 \\
+2048 & 45.87  & 6.91 & 0.992 {\scriptsize[0.991, 0.993]} & 0.0190 \\
+4096 & 89.74  & 7.07 & 0.994 {\scriptsize[0.994, 0.994]} & 0.0202 \\
+8192 & 172.27 & 7.35 & 0.995 {\scriptsize[0.995, 0.996]} & 0.0201 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[t]
+\caption{$D(L)$ across output length and concurrency: Qwen2.5-7B, A100, mean of 3 windows per condition. The out\,=\,512, $c{=}4$ cell ran on a second A100 in a later session; its 95\% CIs at $L\le1024$ are wide ([0.62, 0.98] and [0.91, 1.05]).}
+\label{tab:grid}
+\centering
+\footnotesize
+\begin{tabular}{@{}rccccc@{}}
+\toprule
+ & out 1 & \multicolumn{2}{c}{out 128} & \multicolumn{2}{c}{out 512} \\
+\cmidrule(lr){2-2}\cmidrule(lr){3-4}\cmidrule(lr){5-6}
+$L$ & $c{=}1$ & $c{=}4$ & $c{=}16$ & $c{=}4$ & $c{=}16$ \\
+\midrule
+512  & 0.986 & 0.924 & 0.949 & 0.795 & 0.903 \\
+1024 & 0.993 & 0.918 & 0.968 & 0.973 & 0.921 \\
+2048 & 0.992 & 0.948 & 0.962 & 0.933 & 0.915 \\
+4096 & 0.994 & 0.949 & 0.966 & 0.865 & 0.903 \\
+8192 & 0.995 & 0.960 & 0.969 & 0.872 & 0.913 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Discount curve.} Table~\ref{tab:dl} gives $D(L)$ with 1-token outputs, which isolates prefill. $D$ rises from 0.986 at $L{=}512$ to 0.995 at $L{=}8192$, approaching 1; the saving is far outside the 0.8\% noise floor at every $L$. With 1-token outputs, a pricing rule of $b=0.1a$ predicts $D\approx0.9$; the measured values are above this, since a cached token cost about 0.08\,mJ against about 20\,mJ for a recomputed one. Longer outputs are expected to lower $D$, because decoding still reads the cached prefix; those cells are complete (Table~\ref{tab:grid}). $D$ falls to 0.92--0.97 at 128 output tokens and 0.87--0.93 at 512 (for $L\ge2048$), while the energy saved per reused token stays between 0.017 and 0.028\,J in every cell.
+
+\textbf{Where the saving comes from.} The saving is mostly time, not power. In the 1-token sweep at $L{=}8192$, \textsc{Miss} and \textsc{Off} windows drew about 397\,W of the A100's 400\,W limit, with the SM clock pulled down to about 1260\,MHz, while \textsc{Hit} drew about 363\,W at the full 1410\,MHz. Power fell by under 10\%, but each request finished far sooner. At $L{=}8192$ the grid cells drew 356--395\,W, and every logged clock was 1410\,MHz.
+
+\textbf{Reproduction.} Moved to Nov 2--8; I prioritized the condition controls above after the proposal feedback.
+
+\section{Changes from the Proposal}
+(1) The primary comparison is now \textsc{Hit} vs.\ \textsc{Miss} in a single server configuration, and the radix-off condition is a control rather than the baseline for $D$. (2) Requests are sent as raw token IDs. (3) The scheduling policy is pinned. (4) Windows have a minimum duration as well as a minimum request count. The research questions, models, baselines, and RQ2 accounting model (Eq.~2 of the proposal) are unchanged. (5) The platform moved from Chameleon Cloud to a RunPod A100 because every Chameleon GPU was reserved through November. Section~III describes how I validated the rented GPU's energy counter and how I control for session-to-session drift. (6) RunPod does not offer the A30, so the second-GPU checks move to an A40.
+
+\section{Plan to December 6 and Risks}
+\textbf{Nov 2--8:} PrefixBench-style reproduction on vLLM; rerun $\Delta_{\text{on}}$ with \textsc{Miss} and \textsc{Off} alternating across several server restarts, so restart effects average out; repeat the out\,=\,512, $c{=}4$ cell at $L\le1024$ to narrow its CIs.
+\textbf{Nov 9--15:} Llama-3.1-8B-Instruct on the A100; A40 checks at $L\in\{2048, 8192\}$.
+\textbf{Nov 16--22:} held-out workloads (ShareGPT, shared agent system prompts, LongBench RAG templates) with fixed-rate and Poisson arrivals; fit the four accounting variants on synthetic data only.
+\textbf{Nov 23--26:} evaluate RQ2 on held-out windows; release the harness on GitHub.
+\textbf{Nov 27--Dec 3:} presentation. \textbf{Dec 4--6:} final report.
+
+\textbf{Risks.} (1) If $\Delta_{\text{on}}$ is non-zero, $D$ and the ``turn caching on'' saving diverge; I will report both rather than pick one. (2) At high concurrency, unique \textsc{Miss} prefixes can fill the KV pool and trigger eviction. I flush between windows, and an eviction inside a \textsc{Hit} window would show up as a request with fewer than $L$ cached tokens and reject the window. None has occurred so far; if one does at $L{=}8192$, I will reduce the window size. (3) The additive model may miss batching effects; I will report errors by load level instead of a single aggregate. (4) A rented pod may land on a different physical GPU each session; the per-session reference window lets me treat sessions as blocks in the analysis, and I will report it if drift exceeds the noise floor.
+
+\section*{Use of AI Tools}
+Claude (Anthropic) was used to help structure this report, check SGLang's scheduling code for cache-dependent behavior, and edit language. All measurements and numbers come from my own runs.
+
+\begin{thebibliography}{9}
+\footnotesize
+\bibitem{prefixbench} O. Shewale, D. Kumar, and D. K. Yadav, ``PrefixBench-H100: Characterizing prefix reuse and time-to-first-token in H100 LLM serving,'' arXiv:2609.19657, 2026.
+\bibitem{zine} N. Zine \emph{et al.}, ``Attention to detail: Evaluating energy, performance, and accuracy trade-offs across vLLM configurations,'' arXiv:2607.09172v2, 2026.
+\bibitem{sglang} L. Zheng \emph{et al.}, ``SGLang: Efficient execution of structured language model programs,'' in \emph{Proc. NeurIPS}, vol. 37, 2024.
+\end{thebibliography}
+
+\end{document}

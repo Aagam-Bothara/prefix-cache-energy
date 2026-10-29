@@ -1,0 +1,121 @@
+== cache on ==
+miss L=8192: cached_tokens = [0, 0, 0, 0, 0], expected 0 -> PASS
+ hit warm-up: cached_tokens = 0 (should be 0)
+ hit L=8192: cached_tokens = [8192, 8192, 8192, 8192, 8192], expected 8192 -> PASS
+measuring idle power for 60s, don't send requests...
+idle check: counter 84.17 W vs power reading 84.40 W
+idle: 84.17 W on NVIDIA A100-SXM4-80GB
+idle: 84.17 W on NVIDIA A100-SXM4-80GB
+3 windows -> results_gaps.csv
+[1/3] miss L=2048  out=1    c=1   rep=0  n=207     30.1s  45.6379 J/req  cached 0..0
+[2/3] miss L=2048  out=1    c=1   rep=2  n=206     30.1s  45.7986 J/req  cached 0..0
+[3/3] miss L=2048  out=1    c=1   rep=1  n=205     30.1s  46.0189 J/req  cached 0..0
+idle: 84.17 W on NVIDIA A100-SXM4-80GB
+66 windows -> results_gaps.csv
+[1/66]  hit L=2048  out=1    c=4   rep=0  n=2745    30.0s  3.2180 J/req  cached 2048..2048
+[2/66]  hit L=512   out=1    c=4   rep=0  n=2804    30.1s  3.2273 J/req  cached 512..512
+[3/66]  hit L=2048  out=1    c=16  rep=1  n=5289    30.1s  1.7734 J/req  cached 2048..2048
+[4/66] miss L=512   out=1    c=4   rep=1  n=772     30.2s  12.2066 J/req  cached 0..0
+[5/66]  hit L=1024  out=1    c=4   rep=0  n=2772    30.0s  3.2672 J/req  cached 1024..1024
+[6/66] miss L=4096  out=1    c=4   rep=0  n=115     30.7s  83.7806 J/req  cached 0..0
+[7/66] miss L=4096  out=1    c=16  rep=1  n=133     33.9s  79.8523 J/req  cached 0..0
+[8/66] miss L=2048  out=1    c=16  rep=2  n=252     31.5s  39.1634 J/req  cached 0..0
+[9/66]  hit L=512   out=1    c=16  rep=2  n=5594    30.1s  1.6384 J/req  cached 512..512
+[10/66]  hit L=4096  out=1    c=16  rep=1  n=4870    30.1s  1.9294 J/req  cached 4096..4096
+[11/66] miss L=8192  out=1    c=16  rep=0  n=70      37.9s  169.4823 J/req  cached 0..0
+[12/66]  hit L=2048  out=1    c=16  rep=0  n=5271    30.1s  1.7718 J/req  cached 2048..2048
+[13/66]  hit L=8192  out=1    c=16  rep=0  n=4292    30.1s  2.1768 J/req  cached 8192..8192
+[14/66] miss L=512   out=1    c=16  rep=2  n=885     30.3s  10.7493 J/req  cached 0..0
+[15/66] miss L=0     out=1    c=16  rep=0  n=6441    30.1s  1.4625 J/req  cached 0..0
+[16/66] miss L=512   out=1    c=16  rep=1  n=849     30.2s  11.1806 J/req  cached 0..0
+[17/66] miss L=4096  out=1    c=4   rep=2  n=115     30.7s  83.9472 J/req  cached 0..0
+[18/66] miss L=4096  out=1    c=16  rep=2  n=133     33.9s  79.9674 J/req  cached 0..0
+[19/66] miss L=1024  out=1    c=4   rep=0  n=424     30.3s  22.3575 J/req  cached 0..0
+[20/66] miss L=0     out=1    c=4   rep=2  n=2993    30.0s  3.0700 J/req  cached 0..0
+[21/66] miss L=0     out=1    c=4   rep=0  n=2985    30.0s  3.0781 J/req  cached 0..0
+[22/66]  hit L=4096  out=1    c=16  rep=0  n=5140    30.1s  1.8234 J/req  cached 4096..4096
+[23/66] miss L=0     out=1    c=4   rep=1  n=2996    30.0s  3.0665 J/req  cached 0..0
+[24/66]  hit L=1024  out=1    c=16  rep=2  n=5503    30.1s  1.6960 J/req  cached 1024..1024
+[25/66]  hit L=1024  out=1    c=4   rep=2  n=2772    30.0s  3.2581 J/req  cached 1024..1024
+[26/66] miss L=1024  out=1    c=4   rep=2  n=424     30.3s  22.4402 J/req  cached 0..0
+[27/66] miss L=1024  out=1    c=16  rep=0  n=484     30.7s  19.9145 J/req  cached 0..0
+[28/66] miss L=1024  out=1    c=16  rep=2  n=481     30.8s  20.1297 J/req  cached 0..0
+[29/66]  hit L=1024  out=1    c=4   rep=1  n=2776    30.0s  3.2782 J/req  cached 1024..1024
+[30/66]  hit L=4096  out=1    c=16  rep=2  n=5071    30.1s  1.8528 J/req  cached 4096..4096
+[31/66]  hit L=512   out=1    c=16  rep=1  n=5998    30.1s  1.5585 J/req  cached 512..512
+[32/66] miss L=2048  out=1    c=4   rep=2  n=229     30.4s  41.6255 J/req  cached 0..0
+[33/66] miss L=4096  out=1    c=16  rep=0  n=133     33.9s  80.0006 J/req  cached 0..0
+[34/66]  hit L=4096  out=1    c=4   rep=2  n=2621    30.0s  3.4382 J/req  cached 4096..4096
+[35/66]  hit L=1024  out=1    c=16  rep=0  n=5466    30.1s  1.6733 J/req  cached 1024..1024
+[36/66] miss L=8192  out=1    c=16  rep=2  n=70      37.9s  169.4528 J/req  cached 0..0
+[37/66]  hit L=4096  out=1    c=4   rep=0  n=2644    30.0s  3.4200 J/req  cached 4096..4096
+[38/66] miss L=2048  out=1    c=16  rep=0  n=253     31.6s  39.2171 J/req  cached 0..0
+[39/66] miss L=0     out=1    c=16  rep=1  n=6138    30.0s  1.5277 J/req  cached 0..0
+[40/66]  hit L=1024  out=1    c=16  rep=1  n=5448    30.1s  1.7010 J/req  cached 1024..1024
+[41/66]  hit L=4096  out=1    c=4   rep=1  n=2641    30.0s  3.4451 J/req  cached 4096..4096
+[42/66] miss L=512   out=1    c=16  rep=0  n=885     30.4s  10.7357 J/req  cached 0..0
+[43/66]  hit L=512   out=1    c=4   rep=2  n=2793    30.0s  3.2296 J/req  cached 512..512
+[44/66] miss L=8192  out=1    c=16  rep=1  n=70      37.9s  169.9730 J/req  cached 0..0
+[45/66]  hit L=8192  out=1    c=4   rep=2  n=2484    30.0s  3.6671 J/req  cached 8192..8192
+[46/66]  hit L=512   out=1    c=16  rep=0  n=5584    30.1s  1.6336 J/req  cached 512..512
+[47/66] miss L=512   out=1    c=4   rep=0  n=769     30.1s  12.2326 J/req  cached 0..0
+[48/66]  hit L=8192  out=1    c=16  rep=2  n=4339    30.1s  2.1636 J/req  cached 8192..8192
+[49/66] miss L=2048  out=1    c=4   rep=0  n=229     30.4s  41.7069 J/req  cached 0..0
+[50/66] miss L=512   out=1    c=4   rep=2  n=769     30.1s  12.2618 J/req  cached 0..0
+[51/66]  hit L=8192  out=1    c=4   rep=0  n=2477    30.0s  3.6721 J/req  cached 8192..8192
+[52/66] miss L=1024  out=1    c=4   rep=1  n=424     30.3s  22.4447 J/req  cached 0..0
+[53/66]  hit L=512   out=1    c=4   rep=1  n=2804    30.0s  3.2391 J/req  cached 512..512
+[54/66] miss L=2048  out=1    c=16  rep=1  n=253     31.6s  39.2697 J/req  cached 0..0
+[55/66] miss L=8192  out=1    c=4   rep=0  n=58      31.4s  169.5279 J/req  cached 0..0
+[56/66] miss L=2048  out=1    c=4   rep=1  n=229     30.4s  41.5273 J/req  cached 0..0
+[57/66]  hit L=8192  out=1    c=16  rep=1  n=4289    30.1s  2.1812 J/req  cached 8192..8192
+[58/66]  hit L=2048  out=1    c=4   rep=2  n=2728    30.0s  3.3256 J/req  cached 2048..2048
+[59/66] miss L=4096  out=1    c=4   rep=1  n=115     30.7s  83.9349 J/req  cached 0..0
+[60/66] miss L=8192  out=1    c=4   rep=1  n=58      31.4s  169.5900 J/req  cached 0..0
+[61/66] miss L=8192  out=1    c=4   rep=2  n=58      31.4s  169.7425 J/req  cached 0..0
+[62/66]  hit L=8192  out=1    c=4   rep=1  n=2488    30.0s  3.6557 J/req  cached 8192..8192
+[63/66] miss L=1024  out=1    c=16  rep=1  n=484     30.7s  19.8664 J/req  cached 0..0
+[64/66] miss L=0     out=1    c=16  rep=2  n=6117    30.1s  1.5285 J/req  cached 0..0
+[65/66]  hit L=2048  out=1    c=16  rep=2  n=5477    30.1s  1.7103 J/req  cached 2048..2048
+[66/66]  hit L=2048  out=1    c=4   rep=1  n=2728    30.0s  3.3172 J/req  cached 2048..2048
+idle: 84.17 W on NVIDIA A100-SXM4-80GB
+36 replay windows -> results_heldout.csv, requests -> results_heldout_requests.jsonl
+[1/36] sharegpt w=0   fixed 1/s  n=120   123.2s  hit 59%  266.576 J/req
+[2/36]    agent w=1 poisson 4/s  n=120    31.1s  hit 94%  68.157 J/req
+Traceback (most recent call last):
+  File "/workspace/harness.py", line 434, in <module>
+    main()
+  File "/workspace/harness.py", line 408, in main
+    row, log = asyncio.run(run_replay_window(args, meter, name, workloads[name][w], w, a, r, idle_w))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/asyncio/runners.py", line 190, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/asyncio/base_events.py", line 654, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/workspace/harness.py", line 267, in run_replay_window
+    await asyncio.gather(*(one(r, o) for r, o in zip(reqs, offsets)))
+  File "/workspace/harness.py", line 263, in one
+    cached = await send(session, args.url, req["input_ids"], req["out"])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/harness.py", line 132, in send
+    async with session.post(f"{url}/generate", json=body) as resp:
+  File "/usr/local/lib/python3.11/dist-packages/aiohttp/client.py", line 1756, in __aenter__
+    self._resp: _RetType_co = await self._coro
+                              ^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/aiohttp/client.py", line 900, in _request
+    resp = await handler(req)
+           ^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/aiohttp/client.py", line 878, in _connect_and_send_request
+    await resp.start(conn)
+  File "/usr/local/lib/python3.11/dist-packages/aiohttp/client_reqrep.py", line 745, in start
+    message, payload = await protocol.read()  # type: ignore[union-attr]
+                       ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/aiohttp/streams.py", line 716, in read
+    await self._waiter
+aiohttp.client_exceptions.ServerDisconnectedError: Server disconnected
+PART_A_DONE

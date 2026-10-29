@@ -1,0 +1,199 @@
+== round 1: cache on == 22:36:58
+miss L=8192: cached_tokens = [0, 0, 0, 0, 0], expected 0 -> PASS
+measuring idle power for 60s, don't send requests...
+idle check: counter 85.31 W vs power reading 85.44 W
+idle: 85.31 W on NVIDIA A100-SXM4-80GB
+idle: 85.31 W on NVIDIA A100-SXM4-80GB
+6 windows -> results_onoff.csv
+[1/6] miss L=8192  out=1    c=1   rep=0  n=55      30.1s  170.6524 J/req  cached 0..0
+[2/6] miss L=2048  out=1    c=1   rep=0  n=206     30.1s  45.5031 J/req  cached 0..0
+[3/6] miss L=0     out=1    c=1   rep=1  n=1265    30.0s  6.2700 J/req  cached 0..0
+[4/6] miss L=0     out=1    c=1   rep=0  n=1266    30.0s  6.2677 J/req  cached 0..0
+[5/6] miss L=8192  out=1    c=1   rep=1  n=55      30.2s  171.3253 J/req  cached 0..0
+[6/6] miss L=2048  out=1    c=1   rep=1  n=206     30.1s  45.4414 J/req  cached 0..0
+idle: 85.31 W on NVIDIA A100-SXM4-80GB
+6 windows -> results_onoff.csv
+[1/6] miss L=8192  out=128  c=4   rep=0  n=40      36.1s  264.5636 J/req  cached 0..0
+[2/6] miss L=2048  out=128  c=4   rep=0  n=68      30.8s  126.2602 J/req  cached 0..0
+[3/6] miss L=0     out=128  c=4   rep=1  n=96      30.9s  85.2764 J/req  cached 0..0
+[4/6] miss L=0     out=128  c=4   rep=0  n=96      30.9s  84.9917 J/req  cached 0..0
+[5/6] miss L=8192  out=128  c=4   rep=1  n=40      36.0s  264.7566 J/req  cached 0..0
+[6/6] miss L=2048  out=128  c=4   rep=1  n=68      30.7s  126.2638 J/req  cached 0..0
+== round 2: cache off == 22:47:22
+ off L=8192: cached_tokens = [0, 0, 0, 0, 0], expected 0 -> PASS
+measuring idle power for 60s, don't send requests...
+idle check: counter 85.41 W vs power reading 85.61 W
+idle: 85.41 W on NVIDIA A100-SXM4-80GB
+idle: 85.41 W on NVIDIA A100-SXM4-80GB
+6 windows -> results_onoff.csv
+[1/6]  off L=8192  out=1    c=1   rep=0  n=55      30.2s  170.8206 J/req  cached 0..0
+[2/6]  off L=2048  out=1    c=1   rep=0  n=206     30.1s  45.3628 J/req  cached 0..0
+[3/6]  off L=0     out=1    c=1   rep=1  n=1267    30.0s  6.2598 J/req  cached 0..0
+[4/6]  off L=0     out=1    c=1   rep=0  n=1268    30.0s  6.2602 J/req  cached 0..0
+[5/6]  off L=8192  out=1    c=1   rep=1  n=55      30.3s  171.0658 J/req  cached 0..0
+[6/6]  off L=2048  out=1    c=1   rep=1  n=205     30.0s  45.4572 J/req  cached 0..0
+idle: 85.41 W on NVIDIA A100-SXM4-80GB
+6 windows -> results_onoff.csv
+[1/6]  off L=8192  out=128  c=4   rep=0  n=40      36.0s  265.8468 J/req  cached 0..0
+[2/6]  off L=2048  out=128  c=4   rep=0  n=68      30.7s  126.2868 J/req  cached 0..0
+[3/6]  off L=0     out=128  c=4   rep=1  n=96      30.9s  85.0585 J/req  cached 0..0
+[4/6]  off L=0     out=128  c=4   rep=0  n=96      30.9s  85.0629 J/req  cached 0..0
+[5/6]  off L=8192  out=128  c=4   rep=1  n=40      36.0s  265.2629 J/req  cached 0..0
+[6/6]  off L=2048  out=128  c=4   rep=1  n=68      30.7s  126.0658 J/req  cached 0..0
+== round 3: cache off == 22:56:42
+ off L=8192: cached_tokens = [0, 0, 0, 0, 0], expected 0 -> PASS
+measuring idle power for 60s, don't send requests...
+idle check: counter 85.31 W vs power reading 85.72 W
+idle: 85.31 W on NVIDIA A100-SXM4-80GB
+idle: 85.31 W on NVIDIA A100-SXM4-80GB
+6 windows -> results_onoff.csv
+[1/6]  off L=8192  out=1    c=1   rep=0  n=55      30.2s  170.5061 J/req  cached 0..0
+[2/6]  off L=2048  out=1    c=1   rep=0  n=205     30.0s  45.5097 J/req  cached 0..0
+[3/6]  off L=0     out=1    c=1   rep=1  n=1263    30.0s  6.2909 J/req  cached 0..0
+[4/6]  off L=0     out=1    c=1   rep=0  n=1263    30.0s  6.2883 J/req  cached 0..0
+[5/6]  off L=8192  out=1    c=1   rep=1  n=55      30.3s  171.2824 J/req  cached 0..0
+[6/6]  off L=2048  out=1    c=1   rep=1  n=206     30.1s  45.5050 J/req  cached 0..0
+idle: 85.31 W on NVIDIA A100-SXM4-80GB
+6 windows -> results_onoff.csv
+[1/6]  off L=8192  out=128  c=4   rep=0  n=40      36.0s  265.6287 J/req  cached 0..0
+[2/6]  off L=2048  out=128  c=4   rep=0  n=68      30.7s  126.2802 J/req  cached 0..0
+[3/6]  off L=0     out=128  c=4   rep=1  n=96      30.9s  85.2050 J/req  cached 0..0
+[4/6]  off L=0     out=128  c=4   rep=0  n=96      30.9s  85.3222 J/req  cached 0..0
+[5/6]  off L=8192  out=128  c=4   rep=1  n=40      36.0s  265.0026 J/req  cached 0..0
+[6/6]  off L=2048  out=128  c=4   rep=1  n=68      30.7s  126.1583 J/req  cached 0..0
+== round 4: cache on == 23:06:08
+miss L=8192: cached_tokens = [0, 0, 0, 0, 0], expected 0 -> PASS
+measuring idle power for 60s, don't send requests...
+idle check: counter 85.61 W vs power reading 85.78 W
+idle: 85.61 W on NVIDIA A100-SXM4-80GB
+idle: 85.61 W on NVIDIA A100-SXM4-80GB
+6 windows -> results_onoff.csv
+[1/6] miss L=8192  out=1    c=1   rep=0  n=55      30.2s  170.1584 J/req  cached 0..0
+[2/6] miss L=2048  out=1    c=1   rep=0  n=205     30.0s  45.4006 J/req  cached 0..0
+[3/6] miss L=0     out=1    c=1   rep=1  n=1265    30.0s  6.2560 J/req  cached 0..0
+[4/6] miss L=0     out=1    c=1   rep=0  n=1262    30.0s  6.2664 J/req  cached 0..0
+[5/6] miss L=8192  out=1    c=1   rep=1  n=55      30.3s  170.7725 J/req  cached 0..0
+[6/6] miss L=2048  out=1    c=1   rep=1  n=205     30.0s  45.3269 J/req  cached 0..0
+idle: 85.61 W on NVIDIA A100-SXM4-80GB
+6 windows -> results_onoff.csv
+[1/6] miss L=8192  out=128  c=4   rep=0  n=40      36.0s  264.6434 J/req  cached 0..0
+[2/6] miss L=2048  out=128  c=4   rep=0  n=68      30.7s  126.6062 J/req  cached 0..0
+[3/6] miss L=0     out=128  c=4   rep=1  n=96      30.9s  85.4100 J/req  cached 0..0
+[4/6] miss L=0     out=128  c=4   rep=0  n=96      30.9s  84.9281 J/req  cached 0..0
+[5/6] miss L=8192  out=128  c=4   rep=1  n=40      36.0s  264.5720 J/req  cached 0..0
+[6/6] miss L=2048  out=128  c=4   rep=1  n=68      30.7s  126.1838 J/req  cached 0..0
+== round 5: cache on == 23:15:29
+miss L=8192: cached_tokens = [0, 0, 0, 0, 0], expected 0 -> PASS
+measuring idle power for 60s, don't send requests...
+idle check: counter 85.61 W vs power reading 85.80 W
+idle: 85.61 W on NVIDIA A100-SXM4-80GB
+idle: 85.61 W on NVIDIA A100-SXM4-80GB
+6 windows -> results_onoff.csv
+[1/6] miss L=8192  out=1    c=1   rep=0  n=55      30.2s  170.5418 J/req  cached 0..0
+[2/6] miss L=2048  out=1    c=1   rep=0  n=206     30.1s  45.4899 J/req  cached 0..0
+[3/6] miss L=0     out=1    c=1   rep=1  n=1262    30.0s  6.2834 J/req  cached 0..0
+[4/6] miss L=0     out=1    c=1   rep=0  n=1263    30.0s  6.2689 J/req  cached 0..0
+[5/6] miss L=8192  out=1    c=1   rep=1  n=55      30.3s  171.2724 J/req  cached 0..0
+[6/6] miss L=2048  out=1    c=1   rep=1  n=205     30.0s  45.4826 J/req  cached 0..0
+idle: 85.61 W on NVIDIA A100-SXM4-80GB
+6 windows -> results_onoff.csv
+[1/6] miss L=8192  out=128  c=4   rep=0  n=40      36.0s  264.8903 J/req  cached 0..0
+[2/6] miss L=2048  out=128  c=4   rep=0  n=68      30.7s  126.0583 J/req  cached 0..0
+[3/6] miss L=0     out=128  c=4   rep=1  n=96      30.9s  85.0272 J/req  cached 0..0
+[4/6] miss L=0     out=128  c=4   rep=0  n=96      30.9s  84.9586 J/req  cached 0..0
+[5/6] miss L=8192  out=128  c=4   rep=1  n=40      36.0s  264.7826 J/req  cached 0..0
+[6/6] miss L=2048  out=128  c=4   rep=1  n=68      30.7s  125.9464 J/req  cached 0..0
+== round 6: cache off == 23:24:50
+ off L=8192: cached_tokens = [0, 0, 0, 0, 0], expected 0 -> PASS
+measuring idle power for 60s, don't send requests...
+idle check: counter 85.77 W vs power reading 85.96 W
+idle: 85.77 W on NVIDIA A100-SXM4-80GB
+idle: 85.77 W on NVIDIA A100-SXM4-80GB
+6 windows -> results_onoff.csv
+[1/6]  off L=8192  out=1    c=1   rep=0  n=55      30.2s  170.6316 J/req  cached 0..0
+[2/6]  off L=2048  out=1    c=1   rep=0  n=206     30.1s  45.4072 J/req  cached 0..0
+[3/6]  off L=0     out=1    c=1   rep=1  n=1262    30.0s  6.2794 J/req  cached 0..0
+[4/6]  off L=0     out=1    c=1   rep=0  n=1264    30.0s  6.2274 J/req  cached 0..0
+[5/6]  off L=8192  out=1    c=1   rep=1  n=55      30.3s  171.0224 J/req  cached 0..0
+[6/6]  off L=2048  out=1    c=1   rep=1  n=205     30.0s  45.4308 J/req  cached 0..0
+idle: 85.77 W on NVIDIA A100-SXM4-80GB
+6 windows -> results_onoff.csv
+[1/6]  off L=8192  out=128  c=4   rep=0  n=40      36.0s  264.1889 J/req  cached 0..0
+[2/6]  off L=2048  out=128  c=4   rep=0  n=68      30.7s  125.8821 J/req  cached 0..0
+[3/6]  off L=0     out=128  c=4   rep=1  n=96      30.9s  84.7194 J/req  cached 0..0
+[4/6]  off L=0     out=128  c=4   rep=0  n=96      30.9s  84.8079 J/req  cached 0..0
+[5/6]  off L=8192  out=128  c=4   rep=1  n=40      36.0s  264.2709 J/req  cached 0..0
+[6/6]  off L=2048  out=128  c=4   rep=1  n=68      30.7s  126.0432 J/req  cached 0..0
+== round 7: cache off == 23:34:11
+ off L=8192: cached_tokens = [0, 0, 0, 0, 0], expected 0 -> PASS
+measuring idle power for 60s, don't send requests...
+idle check: counter 85.65 W vs power reading 85.91 W
+idle: 85.65 W on NVIDIA A100-SXM4-80GB
+idle: 85.65 W on NVIDIA A100-SXM4-80GB
+6 windows -> results_onoff.csv
+[1/6]  off L=8192  out=1    c=1   rep=0  n=55      30.2s  170.9955 J/req  cached 0..0
+[2/6]  off L=2048  out=1    c=1   rep=0  n=206     30.1s  45.3788 J/req  cached 0..0
+[3/6]  off L=0     out=1    c=1   rep=1  n=1263    30.0s  6.2648 J/req  cached 0..0
+[4/6]  off L=0     out=1    c=1   rep=0  n=1265    30.0s  6.2614 J/req  cached 0..0
+[5/6]  off L=8192  out=1    c=1   rep=1  n=55      30.3s  171.4736 J/req  cached 0..0
+[6/6]  off L=2048  out=1    c=1   rep=1  n=205     30.0s  45.5156 J/req  cached 0..0
+idle: 85.65 W on NVIDIA A100-SXM4-80GB
+6 windows -> results_onoff.csv
+[1/6]  off L=8192  out=128  c=4   rep=0  n=40      36.0s  264.6651 J/req  cached 0..0
+[2/6]  off L=2048  out=128  c=4   rep=0  n=68      30.7s  126.2066 J/req  cached 0..0
+[3/6]  off L=0     out=128  c=4   rep=1  n=96      30.9s  85.2685 J/req  cached 0..0
+[4/6]  off L=0     out=128  c=4   rep=0  n=96      30.9s  85.2041 J/req  cached 0..0
+[5/6]  off L=8192  out=128  c=4   rep=1  n=40      36.0s  264.1218 J/req  cached 0..0
+[6/6]  off L=2048  out=128  c=4   rep=1  n=68      30.7s  126.0297 J/req  cached 0..0
+== round 8: cache on == 23:43:31
+miss L=8192: cached_tokens = [0, 0, 0, 0, 0], expected 0 -> PASS
+measuring idle power for 60s, don't send requests...
+idle check: counter 85.60 W vs power reading 85.94 W
+idle: 85.60 W on NVIDIA A100-SXM4-80GB
+idle: 85.60 W on NVIDIA A100-SXM4-80GB
+6 windows -> results_onoff.csv
+[1/6] miss L=8192  out=1    c=1   rep=0  n=55      30.2s  170.8166 J/req  cached 0..0
+[2/6] miss L=2048  out=1    c=1   rep=0  n=205     30.0s  45.4808 J/req  cached 0..0
+[3/6] miss L=0     out=1    c=1   rep=1  n=1262    30.0s  6.3052 J/req  cached 0..0
+[4/6] miss L=0     out=1    c=1   rep=0  n=1263    30.0s  6.2638 J/req  cached 0..0
+[5/6] miss L=8192  out=1    c=1   rep=1  n=55      30.3s  171.1812 J/req  cached 0..0
+[6/6] miss L=2048  out=1    c=1   rep=1  n=205     30.0s  45.4575 J/req  cached 0..0
+idle: 85.60 W on NVIDIA A100-SXM4-80GB
+6 windows -> results_onoff.csv
+[1/6] miss L=8192  out=128  c=4   rep=0  n=40      36.0s  265.2865 J/req  cached 0..0
+[2/6] miss L=2048  out=128  c=4   rep=0  n=68      30.7s  126.4159 J/req  cached 0..0
+[3/6] miss L=0     out=128  c=4   rep=1  n=96      30.9s  85.2763 J/req  cached 0..0
+[4/6] miss L=0     out=128  c=4   rep=0  n=96      30.9s  85.4248 J/req  cached 0..0
+[5/6] miss L=8192  out=128  c=4   rep=1  n=40      36.0s  265.5910 J/req  cached 0..0
+[6/6] miss L=2048  out=128  c=4   rep=1  n=68      30.8s  126.4213 J/req  cached 0..0
+ONOFF_DONE 23:52:52
+== repeat out=512 c=4 at short L == 23:52:52
+miss L=1024: cached_tokens = [0, 0, 0, 0, 0], expected 0 -> PASS
+ hit warm-up: cached_tokens = 0 (should be 0)
+ hit L=1024: cached_tokens = [1024, 1024, 1024, 1024, 1024], expected 1024 -> PASS
+measuring idle power for 60s, don't send requests...
+idle check: counter 86.19 W vs power reading 86.48 W
+idle: 86.19 W on NVIDIA A100-SXM4-80GB
+idle: 86.19 W on NVIDIA A100-SXM4-80GB
+20 windows -> results_onoff.csv
+[1/20] miss L=1024  out=512  c=4   rep=2  n=40      54.3s  359.0466 J/req  cached 0..0
+[2/20]  hit L=1024  out=512  c=4   rep=2  n=40      51.4s  337.9938 J/req  cached 1024..1024
+[3/20]  hit L=1024  out=512  c=4   rep=0  n=40      51.4s  339.0515 J/req  cached 1024..1024
+[4/20]  hit L=512   out=512  c=4   rep=2  n=40      51.2s  337.8208 J/req  cached 512..512
+[5/20] miss L=0     out=512  c=4   rep=0  n=40      51.0s  336.6133 J/req  cached 0..0
+[6/20]  hit L=1024  out=512  c=4   rep=1  n=40      51.4s  341.0052 J/req  cached 1024..1024
+[7/20] miss L=1024  out=512  c=4   rep=3  n=40      54.3s  361.9169 J/req  cached 0..0
+[8/20] miss L=0     out=512  c=4   rep=2  n=40      51.0s  336.1028 J/req  cached 0..0
+[9/20] miss L=0     out=512  c=4   rep=3  n=40      51.0s  336.7041 J/req  cached 0..0
+[10/20] miss L=1024  out=512  c=4   rep=1  n=40      54.3s  362.9021 J/req  cached 0..0
+[11/20] miss L=512   out=512  c=4   rep=1  n=40      52.5s  348.0885 J/req  cached 0..0
+[12/20] miss L=512   out=512  c=4   rep=3  n=40      52.5s  348.9261 J/req  cached 0..0
+[13/20] miss L=512   out=512  c=4   rep=0  n=40      52.5s  348.3357 J/req  cached 0..0
+[14/20]  hit L=1024  out=512  c=4   rep=3  n=40      51.4s  340.7442 J/req  cached 1024..1024
+[15/20] miss L=512   out=512  c=4   rep=2  n=40      52.5s  348.4745 J/req  cached 0..0
+[16/20]  hit L=512   out=512  c=4   rep=3  n=40      51.2s  334.8837 J/req  cached 512..512
+[17/20] miss L=1024  out=512  c=4   rep=0  n=40      54.3s  361.6629 J/req  cached 0..0
+[18/20] miss L=0     out=512  c=4   rep=1  n=40      51.0s  335.0875 J/req  cached 0..0
+[19/20]  hit L=512   out=512  c=4   rep=1  n=40      51.2s  338.2998 J/req  cached 512..512
+[20/20]  hit L=512   out=512  c=4   rep=0  n=40      51.2s  338.2748 J/req  cached 512..512
+ALL_DONE 00:14:57

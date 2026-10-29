@@ -1,0 +1,6 @@
+Thu Oct 29 07:13:18 UTC 2026
+name, uuid, driver_version, power.limit [W], memory.total [MiB]
+NVIDIA A40, GPU-400da700-b48f-52e3-a09c-6ff081e32cc1, 595.91.07, 300.00 W, 46068 MiB
+| NVIDIA-SMI 595.91.07              Driver Version: 595.91.07      CUDA Version: 13.2     |
+sglang 0.5.21
+817f3f215a61

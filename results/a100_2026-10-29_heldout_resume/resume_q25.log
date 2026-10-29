@@ -1,0 +1,43 @@
+miss L=8192: cached_tokens = [0, 0, 0, 0, 0], expected 0 -> PASS
+ hit warm-up: cached_tokens = 0 (should be 0)
+ hit L=8192: cached_tokens = [8192, 8192, 8192, 8192, 8192], expected 8192 -> PASS
+measuring idle power for 60s, don't send requests...
+idle check: counter 87.66 W vs power reading 87.93 W
+idle: 87.66 W on NVIDIA A100-SXM4-80GB
+idle: 87.66 W on NVIDIA A100-SXM4-80GB
+34 replay windows -> results_heldout.csv, requests -> results_heldout_requests.jsonl
+[1/34]    agent w=0 poisson 1/s  n=120   119.3s  hit 95%  149.633 J/req
+[2/34]    agent w=2   fixed 4/s  n=120    30.2s  hit 96%  67.457 J/req
+[3/34]    agent w=2 poisson 1/s  n=120   113.0s  hit 96%  148.473 J/req
+[4/34]    agent w=1   fixed 4/s  n=120    32.1s  hit 95%  72.875 J/req
+[5/34]      rag w=2   fixed 4/s  n=120    30.1s  hit 85%  60.008 J/req
+[6/34]      rag w=1 poisson 1/s  n=120   123.6s  hit 84%  93.445 J/req
+[7/34] sharegpt w=1 poisson 4/s  n=120    36.4s  hit 58%  83.612 J/req
+[8/34] sharegpt w=1   fixed 4/s  n=120    34.2s  hit 58%  80.242 J/req
+[9/34] sharegpt w=2 poisson 1/s  n=120   114.2s  hit 67%  243.113 J/req
+[10/34]    agent w=0   fixed 4/s  n=120    31.2s  hit 95%  73.248 J/req
+[11/34]      rag w=2 poisson 4/s  n=120    26.6s  hit 85%  49.232 J/req
+[12/34] sharegpt w=0   fixed 4/s  n=120    34.3s  hit 58%  83.187 J/req
+[13/34]      rag w=1   fixed 1/s  n=120   119.2s  hit 84%  106.593 J/req
+[14/34]    agent w=2 poisson 4/s  n=120    33.1s  hit 95%  67.760 J/req
+[15/34] sharegpt w=2   fixed 1/s  n=120   119.5s  hit 67%  272.542 J/req
+[16/34] sharegpt w=0 poisson 4/s  n=120    29.5s  hit 58%  71.037 J/req
+[17/34]    agent w=2   fixed 1/s  n=120   119.2s  hit 96%  168.831 J/req
+[18/34]      rag w=0 poisson 4/s  n=120    29.2s  hit 85%  51.992 J/req
+[19/34] sharegpt w=1   fixed 1/s  n=120   121.7s  hit 58%  288.675 J/req
+[20/34]      rag w=2   fixed 1/s  n=120   119.2s  hit 85%  96.179 J/req
+[21/34] sharegpt w=1 poisson 1/s  n=120   110.7s  hit 58%  246.770 J/req
+[22/34]    agent w=1 poisson 1/s  n=120   144.7s  hit 95%  194.155 J/req
+[23/34] sharegpt w=2 poisson 4/s  n=120    35.2s  hit 67%  83.372 J/req
+[24/34]    agent w=0 poisson 4/s  n=120    30.0s  hit 95%  69.636 J/req
+[25/34] sharegpt w=2   fixed 4/s  n=120    33.8s  hit 67%  81.635 J/req
+[26/34]      rag w=2 poisson 1/s  n=120   117.9s  hit 85%  82.475 J/req
+[27/34]      rag w=0   fixed 4/s  n=120    29.9s  hit 85%  60.207 J/req
+[28/34]      rag w=1   fixed 4/s  n=120    30.0s  hit 84%  62.632 J/req
+[29/34]    agent w=0   fixed 1/s  n=120   119.3s  hit 95%  177.256 J/req
+[30/34]      rag w=1 poisson 4/s  n=120    36.6s  hit 84%  61.037 J/req
+[31/34]    agent w=1   fixed 1/s  n=120   120.6s  hit 95%  193.899 J/req
+[32/34] sharegpt w=0 poisson 1/s  n=120   139.3s  hit 58%  300.589 J/req
+[33/34]      rag w=0 poisson 1/s  n=120   113.2s  hit 86%  85.666 J/req
+[34/34]      rag w=0   fixed 1/s  n=120   119.2s  hit 87%  95.381 J/req
+Q25_DONE

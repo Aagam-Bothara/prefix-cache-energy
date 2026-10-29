@@ -1,0 +1,14 @@
+miss L=8192: cached_tokens = [0, 0, 0, 0, 0], expected 0 -> PASS
+ hit warm-up: cached_tokens = 0 (should be 0)
+ hit L=8192: cached_tokens = [8192, 8192, 8192, 8192, 8192], expected 8192 -> PASS
+measuring idle power for 60s, don't send requests...
+idle check: counter 88.41 W vs power reading 88.66 W
+idle: 88.41 W on NVIDIA A100-SXM4-80GB
+idle: 88.41 W on NVIDIA A100-SXM4-80GB
+5 replay windows -> results_heldout_qwen3.csv, requests -> results_heldout_qwen3_requests.jsonl
+[1/5]      rag w=1 poisson 4/s  n=120    36.6s  hit 83%  62.103 J/req
+[2/5]    agent w=1   fixed 1/s  n=120   120.9s  hit 95%  201.596 J/req
+[3/5] sharegpt w=0 poisson 1/s  n=120   139.7s  hit 56%  295.496 J/req
+[4/5]      rag w=0 poisson 1/s  n=120   113.3s  hit 85%  90.909 J/req
+[5/5]      rag w=0   fixed 1/s  n=120   119.2s  hit 87%  100.575 J/req
+RESUME_DONE

@@ -1,0 +1,106 @@
+== cache on ==
+miss L=8192: cached_tokens = [0, 0, 0, 0, 0], expected 0 -> PASS
+ hit warm-up: cached_tokens = 0 (should be 0)
+ hit L=8192: cached_tokens = [8192, 8192, 8192, 8192, 8192], expected 8192 -> PASS
+measuring idle power for 60s, don't send requests...
+idle check: counter 89.77 W vs power reading 90.07 W
+idle: 89.77 W on NVIDIA A100-SXM4-80GB
+idle: 89.77 W on NVIDIA A100-SXM4-80GB
+3 windows -> results_qwen3_gaps.csv
+[1/3] miss L=2048  out=1    c=1   rep=0  n=186     30.0s  49.5724 J/req  cached 0..0
+[2/3] miss L=2048  out=1    c=1   rep=2  n=185     30.1s  49.9702 J/req  cached 0..0
+[3/3] miss L=2048  out=1    c=1   rep=1  n=185     30.1s  49.8968 J/req  cached 0..0
+idle: 89.77 W on NVIDIA A100-SXM4-80GB
+66 windows -> results_qwen3_gaps.csv
+[1/66]  hit L=2048  out=128  c=1   rep=0  n=22      31.3s  372.9408 J/req  cached 2048..2048
+[2/66]  hit L=512   out=128  c=1   rep=0  n=22      30.8s  364.7500 J/req  cached 512..512
+[3/66]  hit L=2048  out=128  c=4   rep=1  n=84      30.6s  94.1663 J/req  cached 2048..2048
+[4/66] miss L=512   out=128  c=1   rep=1  n=21      30.1s  373.9482 J/req  cached 0..0
+[5/66]  hit L=1024  out=128  c=1   rep=0  n=22      31.0s  366.3436 J/req  cached 1024..1024
+[6/66] miss L=4096  out=128  c=1   rep=0  n=18      31.5s  481.9735 J/req  cached 0..0
+[7/66] miss L=4096  out=128  c=4   rep=1  n=44      30.1s  195.3858 J/req  cached 0..0
+[8/66] miss L=2048  out=128  c=4   rep=2  n=60      30.7s  140.6597 J/req  cached 0..0
+[9/66]  hit L=512   out=128  c=4   rep=2  n=88      31.3s  92.8193 J/req  cached 512..512
+[10/66]  hit L=4096  out=128  c=4   rep=1  n=80      30.1s  100.2320 J/req  cached 4096..4096
+[11/66] miss L=8192  out=128  c=4   rep=0  n=32      34.0s  309.4721 J/req  cached 0..0
+[12/66]  hit L=2048  out=128  c=4   rep=0  n=84      30.6s  96.3168 J/req  cached 2048..2048
+[13/66]  hit L=8192  out=128  c=4   rep=0  n=76      30.3s  108.5961 J/req  cached 8192..8192
+[14/66] miss L=512   out=128  c=4   rep=2  n=80      31.3s  102.8201 J/req  cached 0..0
+[15/66] miss L=0     out=128  c=4   rep=0  n=88      31.0s  90.0138 J/req  cached 0..0
+[16/66] miss L=512   out=128  c=4   rep=1  n=80      31.3s  102.5009 J/req  cached 0..0
+[17/66] miss L=4096  out=128  c=1   rep=2  n=18      31.5s  480.6627 J/req  cached 0..0
+[18/66] miss L=4096  out=128  c=4   rep=2  n=44      30.0s  191.7643 J/req  cached 0..0
+[19/66] miss L=1024  out=128  c=1   rep=0  n=21      31.0s  395.2274 J/req  cached 0..0
+[20/66] miss L=0     out=128  c=1   rep=2  n=22      30.6s  366.3266 J/req  cached 0..0
+[21/66] miss L=0     out=128  c=1   rep=0  n=22      30.6s  370.4072 J/req  cached 0..0
+[22/66]  hit L=4096  out=128  c=4   rep=0  n=80      30.1s  100.0037 J/req  cached 4096..4096
+[23/66] miss L=0     out=128  c=1   rep=1  n=22      30.6s  362.9332 J/req  cached 0..0
+[24/66]  hit L=1024  out=128  c=4   rep=2  n=84      30.1s  93.5702 J/req  cached 1024..1024
+[25/66]  hit L=1024  out=128  c=1   rep=2  n=22      31.0s  370.4108 J/req  cached 1024..1024
+[26/66] miss L=1024  out=128  c=1   rep=2  n=21      31.0s  394.2216 J/req  cached 0..0
+[27/66] miss L=1024  out=128  c=4   rep=0  n=72      31.2s  116.0478 J/req  cached 0..0
+[28/66] miss L=1024  out=128  c=4   rep=2  n=72      31.2s  116.1208 J/req  cached 0..0
+[29/66]  hit L=1024  out=128  c=1   rep=1  n=22      31.0s  366.6655 J/req  cached 1024..1024
+[30/66]  hit L=4096  out=128  c=4   rep=2  n=80      30.1s  99.5298 J/req  cached 4096..4096
+[31/66]  hit L=512   out=128  c=4   rep=1  n=88      31.3s  92.3557 J/req  cached 512..512
+[32/66] miss L=2048  out=128  c=1   rep=2  n=20      31.1s  419.6810 J/req  cached 0..0
+[33/66] miss L=4096  out=128  c=4   rep=0  n=44      30.0s  191.3699 J/req  cached 0..0
+[34/66]  hit L=4096  out=128  c=1   rep=2  n=21      30.6s  379.8252 J/req  cached 4096..4096
+[35/66]  hit L=1024  out=128  c=4   rep=0  n=84      30.1s  91.7026 J/req  cached 1024..1024
+[36/66] miss L=8192  out=128  c=4   rep=2  n=32      34.3s  308.7298 J/req  cached 0..0
+[37/66]  hit L=4096  out=128  c=1   rep=0  n=21      30.6s  378.9602 J/req  cached 4096..4096
+[38/66] miss L=2048  out=128  c=4   rep=0  n=60      30.7s  139.1643 J/req  cached 0..0
+[39/66] miss L=0     out=128  c=4   rep=1  n=88      31.0s  89.0356 J/req  cached 0..0
+[40/66]  hit L=1024  out=128  c=4   rep=1  n=84      30.2s  93.1029 J/req  cached 1024..1024
+[41/66]  hit L=4096  out=128  c=1   rep=1  n=21      30.6s  378.1192 J/req  cached 4096..4096
+[42/66] miss L=512   out=128  c=4   rep=0  n=80      31.2s  102.0162 J/req  cached 0..0
+[43/66]  hit L=512   out=128  c=1   rep=2  n=22      30.8s  367.8576 J/req  cached 512..512
+[44/66] miss L=8192  out=128  c=4   rep=1  n=32      34.0s  308.0748 J/req  cached 0..0
+[45/66]  hit L=8192  out=128  c=1   rep=2  n=20      30.1s  394.3941 J/req  cached 8192..8192
+[46/66]  hit L=512   out=128  c=4   rep=0  n=88      31.3s  91.7242 J/req  cached 512..512
+[47/66] miss L=512   out=128  c=1   rep=0  n=21      30.1s  380.5558 J/req  cached 0..0
+[48/66]  hit L=8192  out=128  c=4   rep=2  n=76      30.3s  108.2171 J/req  cached 8192..8192
+[49/66] miss L=2048  out=128  c=1   rep=0  n=20      31.1s  419.2862 J/req  cached 0..0
+[50/66] miss L=512   out=128  c=1   rep=2  n=21      30.1s  379.7055 J/req  cached 0..0
+[51/66]  hit L=8192  out=128  c=1   rep=0  n=20      30.1s  398.7775 J/req  cached 8192..8192
+[52/66] miss L=1024  out=128  c=1   rep=1  n=21      31.0s  393.7074 J/req  cached 0..0
+[53/66]  hit L=512   out=128  c=1   rep=1  n=22      30.8s  371.0560 J/req  cached 512..512
+[54/66] miss L=2048  out=128  c=4   rep=1  n=60      30.7s  140.0774 J/req  cached 0..0
+[55/66] miss L=8192  out=128  c=1   rep=0  n=15      31.5s  587.2404 J/req  cached 0..0
+[56/66] miss L=2048  out=128  c=1   rep=1  n=20      31.2s  418.8849 J/req  cached 0..0
+[57/66]  hit L=8192  out=128  c=4   rep=1  n=76      30.3s  108.2640 J/req  cached 8192..8192
+[58/66]  hit L=2048  out=128  c=1   rep=2  n=22      31.3s  377.8205 J/req  cached 2048..2048
+[59/66] miss L=4096  out=128  c=1   rep=1  n=18      31.5s  479.4661 J/req  cached 0..0
+[60/66] miss L=8192  out=128  c=1   rep=1  n=15      31.5s  587.7423 J/req  cached 0..0
+[61/66] miss L=8192  out=128  c=1   rep=2  n=15      31.5s  589.2162 J/req  cached 0..0
+[62/66]  hit L=8192  out=128  c=1   rep=1  n=20      30.1s  395.2029 J/req  cached 8192..8192
+[63/66] miss L=1024  out=128  c=4   rep=1  n=72      31.2s  116.4635 J/req  cached 0..0
+[64/66] miss L=0     out=128  c=4   rep=2  n=88      31.0s  90.2065 J/req  cached 0..0
+[65/66]  hit L=2048  out=128  c=4   rep=2  n=84      30.6s  95.6144 J/req  cached 2048..2048
+[66/66]  hit L=2048  out=128  c=1   rep=1  n=22      31.3s  377.0043 J/req  cached 2048..2048
+noise floor
+  miss L=2048 out=1 c=1: 6 windows, 49.8521 J/req, CV 0.4%
+
+main: 99 windows used, 0 dropped for cache mismatches
+
+D(L), out=1 c=4  (E = active J/request, [95% CI])
+  L=512   E_miss 13.8429  E_hit 3.4275  D 0.979 [0.977, 0.982]  saved/token 2.034e-02 J [2.027e-02, 2.041e-02]
+  L=1024  E_miss 23.7408  E_hit 3.4804  D 0.987 [0.986, 0.988]  saved/token 1.979e-02 J [1.976e-02, 1.981e-02]
+  L=2048  E_miss 45.3338  E_hit 3.5815  D 0.991 [0.991, 0.991]  saved/token 2.039e-02 J [2.037e-02, 2.041e-02]
+  L=4096  E_miss 92.3336  E_hit 3.4816  D 0.997 [0.994, 1.003]  saved/token 2.169e-02 J [2.162e-02, 2.182e-02]
+  L=8192  E_miss 191.2952  E_hit 4.0441  D 0.996 [0.995, 0.996]  saved/token 2.286e-02 J [2.282e-02, 2.289e-02]
+
+D(L), out=128 c=1  (E = active J/request, [95% CI])
+  L=512   E_miss 378.0699  E_hit 367.8879  D 0.884 [0.555, 1.371]  saved/token 1.989e-02 J [1.148e-02, 2.829e-02]
+  L=1024  E_miss 394.3855  E_hit 367.8067  D 0.955 [0.831, 1.106]  saved/token 2.596e-02 J [2.358e-02, 2.777e-02]
+  L=2048  E_miss 419.2840  E_hit 375.9219  D 0.822 [0.757, 0.896]  saved/token 2.117e-02 J [2.025e-02, 2.256e-02]
+  L=4096  E_miss 480.7007  E_hit 378.9682  D 0.891 [0.865, 0.920]  saved/token 2.484e-02 J [2.449e-02, 2.518e-02]
+  L=8192  E_miss 588.0663  E_hit 396.1248  D 0.867 [0.850, 0.883]  saved/token 2.343e-02 J [2.313e-02, 2.369e-02]
+
+D(L), out=128 c=4  (E = active J/request, [95% CI])
+  L=512   E_miss 102.4457  E_hit 92.2998  D 0.799 [0.745, 0.853]  saved/token 1.982e-02 J [1.858e-02, 2.105e-02]
+  L=1024  E_miss 116.2107  E_hit 92.7919  D 0.885 [0.849, 0.925]  saved/token 2.287e-02 J [2.211e-02, 2.391e-02]
+  L=2048  E_miss 139.9672  E_hit 95.3658  D 0.888 [0.867, 0.911]  saved/token 2.178e-02 J [2.118e-02, 2.237e-02]
+  L=4096  E_miss 192.8400  E_hit 99.9218  D 0.901 [0.895, 0.907]  saved/token 2.269e-02 J [2.230e-02, 2.329e-02]
+  L=8192  E_miss 308.7589  E_hit 108.3591  D 0.915 [0.912, 0.917]  saved/token 2.446e-02 J [2.438e-02, 2.455e-02]
+Q3_DONE

@@ -1,0 +1,6 @@
+Thu Oct 29 07:56:42 UTC 2026
+name, uuid, driver_version, power.limit [W], memory.total [MiB]
+NVIDIA A100-SXM4-80GB, GPU-295e1c49-f131-e9a1-ed69-da642bec52c8, 595.91.07, 400.00 W, 81920 MiB
+| NVIDIA-SMI 595.91.07              Driver Version: 595.91.07      CUDA Version: 13.2     |
+sglang 0.5.21
+990bc65076dd
