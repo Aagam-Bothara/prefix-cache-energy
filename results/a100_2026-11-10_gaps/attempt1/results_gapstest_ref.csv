@@ -1,0 +1,4 @@
+time,host,gpu,tag,mode,L,suffix,out,conc,rep,n_requests,cache_mismatches,min_cached,max_cached,seconds,total_j,idle_w,active_j,active_j_per_req,total_j_per_req,warmup_active_j,sm_mhz_start,sm_mhz_end,temp_start,temp_end,power_limit_w,other_procs
+2026-11-10 02:04:25,2efbf0355cd2,NVIDIA A100-SXM4-80GB,reference,miss,2048,64,1,1,0,204,0,0,0,30.092,11878.533,84.8,9326.695,45.71909,58.2281,33.2304,1410,1275,44,68,400.0,0
+2026-11-10 02:04:56,2efbf0355cd2,NVIDIA A100-SXM4-80GB,reference,miss,2048,64,1,1,2,203,0,0,0,30.048,11930.962,84.8,9382.889,46.22113,58.77321,27.354,1410,1260,54,70,400.0,0
+2026-11-10 02:05:28,2efbf0355cd2,NVIDIA A100-SXM4-80GB,reference,miss,2048,64,1,1,1,203,0,0,0,30.018,11899.607,84.8,9354.096,46.07929,58.61875,16.2398,1410,1275,56,70,400.0,0

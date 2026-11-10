@@ -1,0 +1,88 @@
+== cache on == 02:58:03
+miss L=8192: cached_tokens = [0, 0, 0, 0, 0], expected 0 -> PASS
+ hit warm-up: cached_tokens = 0 (should be 0)
+ hit L=8192: cached_tokens = [8192, 8192, 8192, 8192, 8192], expected 8192 -> PASS
+measuring idle power for 60s, don't send requests...
+idle check: counter 84.95 W vs power reading 85.21 W
+idle: 84.95 W on NVIDIA A100-SXM4-80GB
+idle: 84.95 W on NVIDIA A100-SXM4-80GB
+3 windows -> results_gapstest_qwen3_ref.csv
+[1/3] miss L=2048  out=1    c=1   rep=0  n=186     30.0s  50.0756 J/req  cached 0..0
+[2/3] miss L=2048  out=1    c=1   rep=2  n=186     30.1s  50.2218 J/req  cached 0..0
+[3/3] miss L=2048  out=1    c=1   rep=1  n=185     30.1s  50.4276 J/req  cached 0..0
+idle: 84.95 W on NVIDIA A100-SXM4-80GB
+3 windows -> results_gapstest_qwen3.csv
+[1/3] miss L=2048  out=1    c=1   think=0 p=1  rep=0  n=185     30.0s  50.1673 J/req  cached 0..0
+[2/3] miss L=2048  out=1    c=1   think=0 p=1  rep=2  n=185     30.0s  50.2752 J/req  cached 0..0
+[3/3] miss L=2048  out=1    c=1   think=0 p=1  rep=1  n=185     30.0s  50.3943 J/req  cached 0..0
+TRACE_CHECK_DONE 03:03:42
+idle: 84.95 W on NVIDIA A100-SXM4-80GB
+21 windows -> results_gapstest_qwen3.csv
+[1/21]  hit L=5440  out=21   c=1   think=0.5 p=1  rep=1  n=41      30.7s  83.0696 J/req  cached 5440..5440
+[2/21]  hit L=5440  out=21   c=1   think=5 p=1  rep=1  n=10      52.6s  106.4175 J/req  cached 5440..5440
+[3/21]  hit L=5440  out=21   c=1   think=2 p=1  rep=2  n=14      31.6s  103.0772 J/req  cached 5440..5440
+[4/21]  hit L=5440  out=21   c=1   think=1 p=1  rep=2  n=25      31.2s  93.1100 J/req  cached 5440..5440
+[5/21]  hit L=5440  out=21   c=1   think=0 p=1  rep=0  n=119     30.2s  65.9186 J/req  cached 5440..5440
+[6/21]  hit L=5440  out=21   c=1   think=5 p=1  rep=0  n=10      52.6s  105.8527 J/req  cached 5440..5440
+[7/21]  hit L=5440  out=21   c=1   think=0.5 p=1  rep=2  n=41      30.7s  78.9387 J/req  cached 5440..5440
+[8/21]  hit L=5440  out=21   c=1   think=0 p=1  rep=2  n=119     30.2s  66.0001 J/req  cached 5440..5440
+[9/21]  hit L=5440  out=21   c=1   think=0.1 p=1  rep=0  n=87      30.2s  69.4033 J/req  cached 5440..5440
+[10/21]  hit L=5440  out=21   c=1   think=0.5 p=1  rep=0  n=41      30.7s  81.7075 J/req  cached 5440..5440
+[11/21]  hit L=5440  out=21   c=1   think=0.1 p=1  rep=2  n=87      30.1s  68.8644 J/req  cached 5440..5440
+[12/21]  hit L=5440  out=21   c=1   think=0.25 p=1  rep=1  n=61      30.3s  73.9132 J/req  cached 5440..5440
+[13/21]  hit L=5440  out=21   c=1   think=0.1 p=1  rep=1  n=87      30.2s  68.9727 J/req  cached 5440..5440
+[14/21]  hit L=5440  out=21   c=1   think=5 p=1  rep=2  n=10      52.6s  104.0524 J/req  cached 5440..5440
+[15/21]  hit L=5440  out=21   c=1   think=0.25 p=1  rep=0  n=61      30.3s  71.9583 J/req  cached 5440..5440
+[16/21]  hit L=5440  out=21   c=1   think=2 p=1  rep=0  n=14      31.6s  105.7192 J/req  cached 5440..5440
+[17/21]  hit L=5440  out=21   c=1   think=2 p=1  rep=1  n=14      31.6s  105.2535 J/req  cached 5440..5440
+[18/21]  hit L=5440  out=21   c=1   think=0.25 p=1  rep=2  n=61      30.3s  71.8240 J/req  cached 5440..5440
+[19/21]  hit L=5440  out=21   c=1   think=0 p=1  rep=1  n=119     30.2s  66.1989 J/req  cached 5440..5440
+[20/21]  hit L=5440  out=21   c=1   think=1 p=1  rep=1  n=25      31.2s  97.1135 J/req  cached 5440..5440
+[21/21]  hit L=5440  out=21   c=1   think=1 p=1  rep=0  n=25      31.2s  94.5294 J/req  cached 5440..5440
+idle: 84.95 W on NVIDIA A100-SXM4-80GB
+15 windows -> results_gapstest_qwen3.csv
+[1/15]  hit L=3040  out=73   c=1   think=0 p=1  rep=1  n=37      30.4s  214.0548 J/req  cached 3040..3040
+[2/15]  hit L=3040  out=73   c=1   think=1 p=1  rep=1  n=17      30.9s  246.0532 J/req  cached 3040..3040
+[3/15]  hit L=3040  out=73   c=1   think=1 p=1  rep=0  n=17      30.9s  240.9945 J/req  cached 3040..3040
+[4/15]  hit L=3040  out=73   c=1   think=0.25 p=1  rep=2  n=29      30.9s  222.2506 J/req  cached 3040..3040
+[5/15]  hit L=3040  out=73   c=1   think=1 p=1  rep=2  n=17      30.9s  245.0288 J/req  cached 3040..3040
+[6/15]  hit L=3040  out=73   c=1   think=0 p=1  rep=2  n=37      30.4s  214.7411 J/req  cached 3040..3040
+[7/15]  hit L=3040  out=73   c=1   think=0.25 p=1  rep=0  n=29      30.9s  224.0616 J/req  cached 3040..3040
+[8/15]  hit L=3040  out=73   c=1   think=0.5 p=1  rep=1  n=23      30.3s  231.4972 J/req  cached 3040..3040
+[9/15]  hit L=3040  out=73   c=1   think=0.5 p=1  rep=2  n=23      30.3s  230.9930 J/req  cached 3040..3040
+[10/15]  hit L=3040  out=73   c=1   think=0.25 p=1  rep=1  n=29      30.9s  222.9940 J/req  cached 3040..3040
+[11/15]  hit L=3040  out=73   c=1   think=0 p=1  rep=0  n=37      30.5s  216.2537 J/req  cached 3040..3040
+[12/15]  hit L=3040  out=73   c=1   think=2 p=1  rep=2  n=11      31.1s  255.6969 J/req  cached 3040..3040
+[13/15]  hit L=3040  out=73   c=1   think=2 p=1  rep=0  n=11      31.1s  251.5873 J/req  cached 3040..3040
+[14/15]  hit L=3040  out=73   c=1   think=0.5 p=1  rep=0  n=23      30.3s  228.8754 J/req  cached 3040..3040
+[15/15]  hit L=3040  out=73   c=1   think=2 p=1  rep=1  n=11      31.1s  259.6317 J/req  cached 3040..3040
+DECAY_DONE 03:24:38
+idle: 84.95 W on NVIDIA A100-SXM4-80GB
+16 windows -> results_gapstest_qwen3.csv
+[1/16]  hit L=5440  out=21   c=1   think=0.7 p=1  rep=2  n=32      30.4s  85.0350 J/req  cached 5440..5440
+[2/16]  hit L=5440  out=21   c=1   think=0.7 p=20 rep=2  n=32      30.4s  86.0428 J/req  cached 5440..5440
+[3/16]  hit L=5440  out=21   c=1   think=0 p=20 rep=1  n=119     30.2s  66.6525 J/req  cached 5440..5440
+[4/16]  hit L=5440  out=21   c=1   think=0 p=1  rep=1  n=119     30.2s  66.7788 J/req  cached 5440..5440
+[5/16]  hit L=5440  out=21   c=1   think=0.7 p=1  rep=1  n=32      30.3s  89.0323 J/req  cached 5440..5440
+[6/16]  hit L=5440  out=21   c=1   think=0 p=1  rep=2  n=119     30.2s  66.1599 J/req  cached 5440..5440
+[7/16]  hit L=5440  out=21   c=1   think=0 p=1  rep=3  n=119     30.2s  66.4912 J/req  cached 5440..5440
+[8/16]  hit L=5440  out=21   c=1   think=0.7 p=1  rep=3  n=32      30.4s  88.0028 J/req  cached 5440..5440
+[9/16]  hit L=5440  out=21   c=1   think=0.7 p=20 rep=1  n=32      30.4s  87.4782 J/req  cached 5440..5440
+[10/16]  hit L=5440  out=21   c=1   think=0 p=20 rep=3  n=119     30.2s  66.5642 J/req  cached 5440..5440
+[11/16]  hit L=5440  out=21   c=1   think=0.7 p=1  rep=0  n=32      30.4s  87.8096 J/req  cached 5440..5440
+[12/16]  hit L=5440  out=21   c=1   think=0 p=20 rep=0  n=119     30.2s  66.6657 J/req  cached 5440..5440
+[13/16]  hit L=5440  out=21   c=1   think=0 p=1  rep=0  n=119     30.2s  67.0089 J/req  cached 5440..5440
+[14/16]  hit L=5440  out=21   c=1   think=0 p=20 rep=2  n=119     30.2s  67.1410 J/req  cached 5440..5440
+[15/16]  hit L=5440  out=21   c=1   think=0.7 p=20 rep=3  n=32      30.4s  89.4326 J/req  cached 5440..5440
+[16/16]  hit L=5440  out=21   c=1   think=0.7 p=20 rep=0  n=32      30.3s  87.7502 J/req  cached 5440..5440
+2X2_DONE 03:34:53
+idle: 84.95 W on NVIDIA A100-SXM4-80GB
+6 replay windows -> results_gapstest_qwen3_replay.csv, requests -> results_gapstest_qwen3_replay_requests.jsonl
+[1/6]    agent w=1   fixed 1/s  n=120   120.9s  hit 95%  196.055 J/req
+[2/6]      rag w=2   fixed 1/s  n=120   119.2s  hit 84%  97.257 J/req
+[3/6]      rag w=1   fixed 1/s  n=120   119.2s  hit 84%  107.402 J/req
+[4/6]      rag w=0   fixed 1/s  n=120   119.2s  hit 87%  99.015 J/req
+[5/6]    agent w=2   fixed 1/s  n=120   119.2s  hit 96%  168.642 J/req
+[6/6]    agent w=0   fixed 1/s  n=120   119.4s  hit 95%  180.752 J/req
+ALL_DONE 03:47:01
+SESSION_DONE

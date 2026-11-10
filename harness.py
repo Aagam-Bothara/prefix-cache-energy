@@ -249,8 +249,11 @@ async def run_window(args, meter, mode, L, out_tokens, conc, rep, idle_w, think=
     log = []
 
     # aiohttp allows only 100 open connections by default, which would quietly cap conc at 100.
-    async with aiohttp.ClientSession(timeout=no_total_timeout,
-                                     connector=aiohttp.TCPConnector(limit=0)) as session:
+    # force_close in the gap experiments, as in replay: a connection left idle through a long
+    # --think pause can pass the server's keep-alive timeout and be closed just as it's reused.
+    # It's on for every window of those runs, so all their conditions connect the same way.
+    connector = aiohttp.TCPConnector(limit=0, force_close=args.gap_columns)
+    async with aiohttp.ClientSession(timeout=no_total_timeout, connector=connector) as session:
         await flush_cache(session, args.url)
 
         # Warm-up: one request kept out of the window, in every mode, so no condition starts

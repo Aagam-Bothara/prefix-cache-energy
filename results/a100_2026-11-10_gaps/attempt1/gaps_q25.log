@@ -1,0 +1,58 @@
+== cache on == 02:00:28
+miss L=8192: cached_tokens = [0, 0, 0, 0, 0], expected 0 -> PASS
+ hit warm-up: cached_tokens = 0 (should be 0)
+ hit L=8192: cached_tokens = [8192, 8192, 8192, 8192, 8192], expected 8192 -> PASS
+measuring idle power for 60s, don't send requests...
+idle check: counter 84.80 W vs power reading 84.98 W
+idle: 84.80 W on NVIDIA A100-SXM4-80GB
+idle: 84.80 W on NVIDIA A100-SXM4-80GB
+3 windows -> results_gapstest_ref.csv
+[1/3] miss L=2048  out=1    c=1   rep=0  n=204     30.1s  45.7191 J/req  cached 0..0
+[2/3] miss L=2048  out=1    c=1   rep=2  n=203     30.0s  46.2211 J/req  cached 0..0
+[3/3] miss L=2048  out=1    c=1   rep=1  n=203     30.0s  46.0793 J/req  cached 0..0
+idle: 84.80 W on NVIDIA A100-SXM4-80GB
+3 windows -> results_gapstest.csv
+[1/3] miss L=2048  out=1    c=1   think=0 p=1  rep=0  n=203     30.1s  45.9445 J/req  cached 0..0
+[2/3] miss L=2048  out=1    c=1   think=0 p=1  rep=2  n=203     30.0s  46.1662 J/req  cached 0..0
+[3/3] miss L=2048  out=1    c=1   think=0 p=1  rep=1  n=204     30.1s  46.0567 J/req  cached 0..0
+TRACE_CHECK_DONE 02:07:04
+idle: 84.80 W on NVIDIA A100-SXM4-80GB
+21 windows -> results_gapstest.csv
+[1/21]  hit L=5440  out=21   c=1   think=0.5 p=1  rep=1  n=42      30.4s  78.0701 J/req  cached 5440..5440
+Traceback (most recent call last):
+  File "/workspace/harness.py", line 592, in <module>
+    main()
+  File "/workspace/harness.py", line 583, in main
+    row, log, trace = asyncio.run(run_window(args, meter, mode, L, out_tokens, conc, rep, idle_w,
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/asyncio/runners.py", line 190, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/asyncio/base_events.py", line 654, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/workspace/harness.py", line 293, in run_window
+    await asyncio.gather(*(client() for _ in range(conc)))
+  File "/workspace/harness.py", line 286, in client
+    cached = await send(session, args.url, prompt, out_tokens)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/harness.py", line 213, in send
+    async with session.post(f"{url}/generate", json=body) as resp:
+  File "/usr/local/lib/python3.11/dist-packages/aiohttp/client.py", line 1756, in __aenter__
+    self._resp: _RetType_co = await self._coro
+                              ^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/aiohttp/client.py", line 900, in _request
+    resp = await handler(req)
+           ^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/aiohttp/client.py", line 878, in _connect_and_send_request
+    await resp.start(conn)
+  File "/usr/local/lib/python3.11/dist-packages/aiohttp/client_reqrep.py", line 745, in start
+    message, payload = await protocol.read()  # type: ignore[union-attr]
+                       ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/aiohttp/streams.py", line 716, in read
+    await self._waiter
+aiohttp.client_exceptions.ServerDisconnectedError: Server disconnected
+Q25_DONE

@@ -1,0 +1,5 @@
+time,host,gpu,tag,mode,L,suffix,out,conc,rep,n_requests,cache_mismatches,min_cached,max_cached,seconds,total_j,idle_w,active_j,active_j_per_req,total_j_per_req,warmup_active_j,sm_mhz_start,sm_mhz_end,temp_start,temp_end,power_limit_w,other_procs,think,prefixes,window_id
+2026-11-10 02:06:00,2efbf0355cd2,NVIDIA A100-SXM4-80GB,reference-traced,miss,2048,64,1,1,0,203,0,0,0,30.07,11876.637,84.8,9326.723,45.94445,58.5056,44.9442,1230,1275,55,70,400.0,0,0.0,1,1794276360502957113
+2026-11-10 02:06:32,2efbf0355cd2,NVIDIA A100-SXM4-80GB,reference-traced,miss,2048,64,1,1,2,203,0,0,0,30.039,11919.067,84.8,9371.749,46.16625,58.71462,23.7028,1410,1275,56,70,400.0,0,0.0,1,1794276392235000534
+2026-11-10 02:07:04,2efbf0355cd2,NVIDIA A100-SXM4-80GB,reference-traced,miss,2048,64,1,1,1,204,0,0,0,30.141,11951.541,84.8,9395.567,46.0567,58.58599,42.4306,1350,1260,56,71,400.0,0,0.0,1,1794276424070288159
+2026-11-10 02:07:36,2efbf0355cd2,NVIDIA A100-SXM4-80GB,decay-rag,hit,5440,64,21,1,1,42,0,5440,5440,30.37,5854.314,84.8,3278.944,78.07009,139.38843,168.4246,1410,1410,58,52,400.0,0,0.5,1,1794276456857442308

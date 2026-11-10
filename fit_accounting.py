@@ -18,6 +18,11 @@ request; comparing with and without it is the "is a load term needed" test.
 Out-of-sample error: leave one prefix length out (from every load level at once), fit on
 the rest, predict the held-out windows. Errors are per-request means of whole windows.
 
+--gap-w P --gap-s T adds a gap term to the held-out predictions: after a request the GPU
+holds clocks and power above idle for a while, so each stretch with no request in flight
+costs P * min(seconds, T). The synthetic windows are closed loop and never go quiet, so the
+term can't be fitted from them; P and T come from the --think sweeps (analyze_gaps.py).
+
 Example: python fit_accounting.py results/a100_2026-10-27/results.csv results/a100_2026-10-27/results_grid.csv
 """
 import argparse
@@ -136,16 +141,35 @@ def paired_test(diffs, blocks, rng, n=10_000):
     return float(np.mean(np.abs((flips * s).mean(axis=1)) >= observed - 1e-12))
 
 
-def heldout_report(train, windows, concs):
+def quiet_stretches(reqs, seconds):
+    # Lengths of the stretches with no request in flight, from each one's end to the next
+    # one's start, plus the tail from the last response to the end of the window.
+    spans = []
+    for s, e in sorted((q["t_send"], q["t_done"]) for q in reqs):
+        if spans and s <= spans[-1][1]:
+            spans[-1][1] = max(spans[-1][1], e)
+        else:
+            spans.append([s, e])
+    return [b[0] - a[1] for a, b in zip(spans, spans[1:])] + [max(0.0, seconds - spans[-1][1])]
+
+
+def gap_energy(w, gap_w, gap_s):
+    return sum(gap_w * min(g, gap_s) for g in quiet_stretches(w["requests"], float(w["row"]["seconds"])))
+
+
+def heldout_report(train, windows, concs, gap_w=0.0, gap_s=0.0):
     print(f"\nheld-out: {len(windows)} replay windows, models fitted on all {len(train)} synthetic windows")
+    if gap_w:
+        print(f"  gap term on: {gap_w:g} W for up to {gap_s:g} s of each quiet stretch")
     groups = sorted({(w["row"]["workload"], w["row"]["arrival"], w["row"]["rate"]) for w in windows})
+    gaps = [gap_energy(w, gap_w, gap_s) if gap_w else 0.0 for w in windows]
     errs = {}
     for v in VARIANTS:
         coef = fit(v, train, concs)
-        # A window's prediction is the sum of its requests' estimates, compared with the
-        # window's measured active energy.
-        errs[v] = [(predict(v, coef, w["requests"], concs).sum() - float(w["row"]["active_j"]))
-                   / float(w["row"]["active_j"]) for w in windows]
+        # A window's prediction is the sum of its requests' estimates, plus the gap term,
+        # compared with the window's measured active energy.
+        errs[v] = [(predict(v, coef, w["requests"], concs).sum() + g - float(w["row"]["active_j"]))
+                   / float(w["row"]["active_j"]) for w, g in zip(windows, gaps)]
 
     head = "".join(f"  {g[0][:8]}/{g[1][:4]}/{float(g[2]):g}".rjust(20) for g in groups)
     print(f"  {'variant':<9} {'all':>6}{head}")
@@ -183,6 +207,8 @@ def main():
     p.add_argument("--model", choices=sorted(MODELS), default="qwen2.5-7b")
     p.add_argument("--load-term", action="store_true", help="separate decode coefficients per concurrency")
     p.add_argument("--heldout", help="CSV from `harness.py replay`, scored with models fitted on the synthetic CSVs")
+    p.add_argument("--gap-w", type=float, default=0.0, help="held-out gap term: watts held above idle when quiet")
+    p.add_argument("--gap-s", type=float, default=0.0, help="held-out gap term: seconds the hold lasts")
     args = p.parse_args()
     global PARAMS, LAYERS, HIDDEN
     PARAMS, LAYERS, HIDDEN = MODELS[args.model]
@@ -225,7 +251,7 @@ def main():
     print("  " + ", ".join(f"{n} {1e3 * x:.4g} mJ" for n, x in zip(names, coef[2:])))
 
     if args.heldout:
-        heldout_report(data, load_heldout(args.heldout), concs)
+        heldout_report(data, load_heldout(args.heldout), concs, args.gap_w, args.gap_s)
 
 
 if __name__ == "__main__":

@@ -5,6 +5,8 @@ optionally the power trace next to it (`--trace`).
 
   gap cost    E(think) - E(0) per request at the same prefix count, with a 95% Welch t-interval,
               and that divided by the pause: the average power above idle while waiting
+  hold fit    P and T in "a quiet stretch of g seconds costs P * min(g, T)", the gap term
+              fit_accounting.py takes (--gap-w P --gap-s T), from three or more think values
   2x2         prefix-count effect without pauses, pause effect with one prefix, and their
               interaction, when the CSV has exactly two think values and two prefix counts
   decay       from the trace: power above idle during quiet stretches (no request in flight),
@@ -22,6 +24,8 @@ import csv
 import json
 import statistics
 from collections import defaultdict
+
+import numpy as np
 
 from analyze import saved, saved_ci
 
@@ -56,6 +60,8 @@ def gap_report(rows):
             print(f"    think {key[5]:>5g}s  E {mean(v):.3f} J  gap cost {saved(v, base):+.3f} J [{lo:+.3f}, {hi:+.3f}]"
                   f"  = {saved(v, base) / key[5]:+.1f} W over the pause")
 
+    fit_hold(cells)
+
     thinks = sorted({k[5] for k in cells})
     counts = sorted({k[4] for k in cells})
     if len(thinks) != 2 or len(counts) != 2:
@@ -72,6 +78,39 @@ def gap_report(rows):
             print(f"    {name:<24} {saved(x, y):+.3f} [{lo:+.3f}, {hi:+.3f}]  ({100 * saved(x, y) / mean(y):+.1f}%)")
         inter = mean(d) - mean(b) - mean(c) + mean(a)
         print(f"    {'interaction':<24} {inter:+.3f}")
+
+
+def hold_fit(points):
+    # Least squares for cost = P * min(pause, T): P in closed form for each T on a grid.
+    best = None
+    for T in np.arange(0.2, 5.001, 0.01):
+        x = np.minimum([p for p, _ in points], T)
+        y = np.array([c for _, c in points])
+        P = float(x @ y / (x @ x))
+        sse = float(((y - P * x) ** 2).sum())
+        if best is None or sse < best[2]:
+            best = (P, T, sse)
+    return best[:2]
+
+
+def fit_hold(cells):
+    # The hold model for the accounting gap term: each quiet stretch of g seconds costs
+    # P * min(g, T) joules. One point per window: its J/request minus the mean of the
+    # no-pause windows of the same shape. 95% CIs from a bootstrap over windows.
+    points = []
+    for key, v in cells.items():
+        base = cells.get((*key[:5], 0.0))
+        if key[5] > 0 and base:
+            points += [(key[5], e - mean(base)) for e in v]
+    if len({p for p, _ in points}) < 3:
+        return
+    P, T = hold_fit(points)
+    rng = np.random.default_rng(0)
+    boot = [hold_fit([points[i] for i in rng.integers(len(points), size=len(points))]) for _ in range(300)]
+    (p_lo, t_lo), (p_hi, t_hi) = np.percentile(boot, 2.5, axis=0), np.percentile(boot, 97.5, axis=0)
+    print(f"\nhold fit over {len(points)} windows: P = {P:.1f} W [{p_lo:.1f}, {p_hi:.1f}] for up to "
+          f"T = {T:.2f} s [{t_lo:.2f}, {t_hi:.2f}], at most {P * T:.1f} J per gap")
+    print(f"  for fit_accounting.py: --gap-w {P:.1f} --gap-s {T:.2f}")
 
 
 def busy_spans(reqs):
@@ -102,8 +141,8 @@ def decay_report(csv_path, rows):
             return f"{r['workload']} {r['arrival']} {float(r['rate']):g}/s"
         return f"{r['mode']} L={r['L']} out={r['out']} think={float(r['think']):g}s prefixes={r['prefixes']}"
 
-    # group -> bin -> [seconds, joules above idle, sum of power_w * s, sum of sm_mhz * s, samples]
-    acc = defaultdict(lambda: defaultdict(lambda: [0.0, 0.0, 0.0, 0.0, 0]))
+    # group -> bin -> [seconds, joules above idle, power_w * s, power_instant_w * s, sm_mhz * s]
+    acc = defaultdict(lambda: defaultdict(lambda: [0.0, 0.0, 0.0, 0.0, 0.0]))
     busy = defaultdict(lambda: [0.0, 0.0])
     for r in rows:
         wid = r["window_id"]
@@ -131,8 +170,8 @@ def decay_report(csv_path, rows):
             cell[0] += dt
             cell[1] += excess
             cell[2] += float(p1["power_w"] or "nan") * dt
-            cell[3] += float(p1["sm_mhz"] or "nan") * dt
-            cell[4] += 1
+            cell[3] += float(p1["power_instant_w"] or "nan") * dt
+            cell[4] += float(p1["sm_mhz"] or "nan") * dt
 
     print("\ndecay: power above idle while no request is in flight, by time since the GPU went quiet")
     for g in sorted(acc):
@@ -140,11 +179,11 @@ def decay_report(csv_path, rows):
         quiet_j = sum(c[1] for c in acc[g].values())
         busy_s, busy_j = busy[g]
         print(f"  {g}: quiet {quiet_s:.1f}s holding {quiet_j:.1f} J above idle; busy {busy_s:.1f}s, {busy_j:.1f} J")
-        print(f"    {'since quiet':<14}{'seconds':>8}{'W above idle':>14}{'power_w':>9}{'SM MHz':>8}")
+        print(f"    {'since quiet':<14}{'seconds':>8}{'W above idle':>14}{'power_w':>9}{'instant':>9}{'SM MHz':>8}")
         for k in sorted(acc[g]):
-            s, j, pw, mhz, n = acc[g][k]
+            s, j, pw, inst, mhz = acc[g][k]
             label = f"{BINS[k]:g}-{BINS[k + 1]:g}s"
-            print(f"    {label:<14}{s:>8.1f}{j / s:>14.1f}{pw / s:>9.1f}{mhz / s:>8.0f}")
+            print(f"    {label:<14}{s:>8.1f}{j / s:>14.1f}{pw / s:>9.1f}{inst / s:>9.1f}{mhz / s:>8.0f}")
 
 
 def main():
