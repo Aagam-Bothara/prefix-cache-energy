@@ -7,8 +7,9 @@ over a "window" of many requests, with the server's prefix cache in a known stat
   off   server started with --disable-radix-cache. Every request recomputes the prefix.
   miss  cache on, but each request's prefix starts with a token no other request has,
         so nothing can be reused. Same token counts as `hit`, so miss-vs-hit isolates reuse.
-  hit   cache on, every request shares the exact same prefix. One warm-up request
-        puts it in the cache first and is not counted.
+  hit   cache on, every request shares the exact same prefix.
+Every window, in every mode, starts with one uncounted warm-up request; in `hit` it is also
+what puts the prefix in the cache.
 
 Commands:
   check   send 5 requests per mode and print cached_tokens (run this first on a new server)
@@ -17,8 +18,20 @@ Commands:
   replay  replay held-out workloads (from make_workloads.py) with fixed-rate or Poisson
           arrivals; one CSV row per window, plus every request's token counts in a JSONL file
 
+Options for the gap experiments (off by default, so earlier runs are reproduced exactly):
+  --think     sweep: seconds each client waits after a response before sending again, so
+              the window includes idle gaps like low-rate traffic does
+  --prefixes  sweep: number of distinct shared prefixes, picked Zipf-weighted per request
+              like the RAG workload's documents; every one gets its own warm-up
+  --trace     sweep and replay: sample the energy counter, power and SM clock every this
+              many seconds, written to <csv>_trace.csv, to see the power between requests
+With any of them on, sweep rows gain think, prefixes and window_id columns, and every
+request's timing goes to <csv>_requests.jsonl, so write those runs to a new CSV.
+
 Example (cache-on server):  python harness.py sweep --modes miss,hit --L 0,512,2048,8192
 Example (cache-off server): python harness.py sweep --modes off --L 0,512,2048,8192
+Example (gap test):         python harness.py sweep --modes hit --L 5440 --out 21 --think 0,0.7 \\
+                                --prefixes 1,20 --trace 0.02 --csv results_gapstest.csv
 """
 import argparse
 import asyncio
@@ -27,6 +40,7 @@ import json
 import os
 import random
 import socket
+import threading
 import time
 import urllib.request
 
@@ -37,6 +51,7 @@ import aiohttp
 # IDs below 100k are ordinary tokens in both the Qwen and Llama vocabularies.
 RAND_LO, RAND_HI = 1000, 20000        # filler tokens for prefixes and suffixes
 UNIQUE_LO, UNIQUE_HI = 20001, 99999   # one per request, never used as filler so it can't collide
+NVML_FI_DEV_POWER_INSTANT = 186       # nvml.h field ID; older pynvml builds don't name it
 
 
 # ----------------------------------------------------------------------------- energy
@@ -54,6 +69,13 @@ class NvmlEnergy:
         self.handle = pynvml.nvmlDeviceGetHandleByIndex(gpu_index)
         name = pynvml.nvmlDeviceGetName(self.handle)
         self.name = name.decode() if isinstance(name, bytes) else name  # older bindings return bytes
+        # On A100s the plain power reading may be a 1 s average, too slow for a tail after a
+        # request that lasts a fraction of a second. Newer drivers also offer an instant reading.
+        try:
+            v = pynvml.nvmlDeviceGetFieldValues(self.handle, [NVML_FI_DEV_POWER_INSTANT])[0]
+            self.has_instant = v.nvmlReturn == pynvml.NVML_SUCCESS
+        except Exception:
+            self.has_instant = False
 
     def millijoules(self):
         return self.nv.nvmlDeviceGetTotalEnergyConsumption(self.handle)
@@ -73,6 +95,20 @@ class NvmlEnergy:
             "other_procs": max(0, len(nv.nvmlDeviceGetComputeRunningProcesses(h)) - 1),
         }
 
+    def sample(self):
+        # One trace point. Power comes from differencing the counter later; the two power
+        # readings are logged to show how much each one smooths.
+        nv, h = self.nv, self.handle
+        point = {"mj": nv.nvmlDeviceGetTotalEnergyConsumption(h),
+                 "power_w": nv.nvmlDeviceGetPowerUsage(h) / 1000,
+                 "power_instant_w": "",
+                 "sm_mhz": nv.nvmlDeviceGetClockInfo(h, nv.NVML_CLOCK_SM)}
+        if self.has_instant:
+            v = nv.nvmlDeviceGetFieldValues(h, [NVML_FI_DEV_POWER_INSTANT])[0]
+            if v.nvmlReturn == nv.NVML_SUCCESS:
+                point["power_instant_w"] = v.value.uiVal / 1000
+        return point
+
 
 class MockEnergy:
     """Fake counter served by mock_server.py, so the harness can be tested without a GPU."""
@@ -91,6 +127,41 @@ class MockEnergy:
 
     def gpu_state(self):
         return {"sm_mhz": "", "temp_c": "", "power_limit_w": "", "other_procs": ""}
+
+    def sample(self):
+        return {"mj": self.millijoules(), "power_w": "", "power_instant_w": "", "sm_mhz": ""}
+
+
+class Tracer:
+    """Samples the meter every `interval` seconds in a background thread while a window runs.
+
+    The window's energy still comes from the counter at its two ends; the trace is only for
+    seeing where in time that energy went, e.g. how long power stays up after a request.
+    NVML calls release the GIL, so sampling doesn't hold up the asyncio client.
+    """
+
+    def __init__(self, meter, interval):
+        self.meter, self.interval = meter, interval
+        self.points = []
+        self.stopped = threading.Event()
+
+    def start(self, t0):
+        self.t0 = t0
+        self.thread = threading.Thread(target=self.run, daemon=True)
+        self.thread.start()
+
+    def run(self):
+        due = time.time()
+        while not self.stopped.is_set():
+            t = time.time() - self.t0
+            self.points.append({"t": round(t, 4), **self.meter.sample()})
+            due += self.interval
+            self.stopped.wait(max(0.0, due - time.time()))
+
+    def stop(self):
+        self.stopped.set()
+        self.thread.join()
+        return self.points
 
 
 # ----------------------------------------------------------------------------- prompts
@@ -115,6 +186,11 @@ def build_prompt(mode, prefix, suffix_len, rng, req_id):
 
 def expected_cached_tokens(mode, L):
     return L if mode == "hit" else 0
+
+
+def zipf_choice(rng, n):
+    # Same weighting as make_workloads.py: rank i is picked with weight 1/(i+1).
+    return rng.choices(range(n), weights=[1 / (i + 1) for i in range(n)])[0]
 
 
 # ----------------------------------------------------------------------------- server calls
@@ -164,10 +240,13 @@ async def flush_cache(session, url):
 
 
 # ----------------------------------------------------------------------------- one window
-async def run_window(args, meter, mode, L, out_tokens, conc, rep, idle_w):
+async def run_window(args, meter, mode, L, out_tokens, conc, rep, idle_w, think=0.0, n_prefixes=1):
     rng = random.Random(time.time_ns())
-    prefix = shared_prefix(L, args.seed)
+    # Prefix 0 is the one earlier runs used, so --prefixes 1 changes nothing.
+    prefixes = [shared_prefix(L, args.seed + 7919 * k) for k in range(n_prefixes)]
     no_total_timeout = aiohttp.ClientTimeout(total=None, sock_read=900)  # long windows are normal
+    tracer = Tracer(meter, args.trace) if args.trace else None
+    log = []
 
     # aiohttp allows only 100 open connections by default, which would quietly cap conc at 100.
     async with aiohttp.ClientSession(timeout=no_total_timeout,
@@ -177,8 +256,10 @@ async def run_window(args, meter, mode, L, out_tokens, conc, rep, idle_w):
         # Warm-up: one request kept out of the window, in every mode, so no condition starts
         # from cold GPU clocks. In `hit` it's also the request that builds the cache entry.
         # Its cost is logged separately, since what I care about is what a reused token costs.
+        # With several prefixes each gets one, so every request in the window can be a hit.
         e, t = meter.millijoules(), time.time()
-        await send(session, args.url, build_prompt(mode, prefix, args.suffix, rng, 0), out_tokens)
+        for prefix in prefixes:
+            await send(session, args.url, build_prompt(mode, prefix, args.suffix, rng, 0), out_tokens)
         warmup_active_j = round((meter.millijoules() - e) / 1000 - idle_w * (time.time() - t), 4)
         await asyncio.sleep(0.5)
 
@@ -186,20 +267,32 @@ async def run_window(args, meter, mode, L, out_tokens, conc, rep, idle_w):
         issued = 0
         state_before = meter.gpu_state()
         e_start, t_start = meter.millijoules(), time.time()
+        if tracer:
+            tracer.start(t_start)
 
         async def client():
             # Closed loop: each client sends its next request as soon as the last one returns,
             # so exactly `conc` requests are in flight the whole time. The window only ends after
             # both enough requests and enough seconds. Short 1-token windows would otherwise be
             # done in a couple of seconds, which is too short to trust an energy delta.
+            # With --think, the client pauses after every response instead, the last one
+            # included, so each request in the window comes with exactly one gap.
             nonlocal issued
             while issued < args.min_requests or time.time() - t_start < args.min_seconds:
                 issued += 1                  # request IDs start at 1; 0 belongs to the warm-up
-                prompt = build_prompt(mode, prefix, args.suffix, rng, issued)
-                cached_counts.append(await send(session, args.url, prompt, out_tokens))
+                k = zipf_choice(rng, n_prefixes) if n_prefixes > 1 else 0
+                prompt = build_prompt(mode, prefixes[k], args.suffix, rng, issued)
+                sent = time.time()
+                cached = await send(session, args.url, prompt, out_tokens)
+                cached_counts.append(cached)
+                log.append({"prompt": len(prompt), "cached": cached, "out": out_tokens, "prefix": k,
+                            "t_send": round(sent - t_start, 4), "t_done": round(time.time() - t_start, 4)})
+                if think:
+                    await asyncio.sleep(think)
 
         await asyncio.gather(*(client() for _ in range(conc)))
         e_end, t_end = meter.millijoules(), time.time()
+        trace = tracer.stop() if tracer else []
         state_after = meter.gpu_state()
 
     if issued > UNIQUE_HI - UNIQUE_LO:
@@ -213,7 +306,7 @@ async def run_window(args, meter, mode, L, out_tokens, conc, rep, idle_w):
     active_j = total_j - idle_w * seconds
     expected = expected_cached_tokens(mode, L)
 
-    return {
+    row = {
         "time": time.strftime("%Y-%m-%d %H:%M:%S"),
         "host": socket.gethostname(),          # tells sessions on different rented machines apart
         "gpu": meter.name,
@@ -235,6 +328,9 @@ async def run_window(args, meter, mode, L, out_tokens, conc, rep, idle_w):
         "power_limit_w": state_before["power_limit_w"],
         "other_procs": state_after["other_procs"],
     }
+    if args.gap_columns:
+        row.update({"think": think, "prefixes": n_prefixes, "window_id": f"{time.time_ns()}"})
+    return row, log, trace
 
 
 # ----------------------------------------------------------------------------- held-out replay
@@ -258,6 +354,7 @@ async def run_replay_window(args, meter, name, reqs, window, arrival, rate, idle
         offsets.append(t)
         t += 1 / rate if arrival == "fixed" else rng.expovariate(rate)
     no_total_timeout = aiohttp.ClientTimeout(total=None, sock_read=900)
+    tracer = Tracer(meter, args.trace) if args.trace else None
     log = []
 
     # force_close: with gaps between arrivals, a pooled connection can sit idle past the server's
@@ -276,6 +373,8 @@ async def run_replay_window(args, meter, name, reqs, window, arrival, rate, idle
 
         state_before = meter.gpu_state()
         e_start, t_start = meter.millijoules(), time.time()
+        if tracer:
+            tracer.start(t_start)
 
         async def one(req, offset):
             await asyncio.sleep(max(0.0, t_start + offset - time.time()))
@@ -286,6 +385,7 @@ async def run_replay_window(args, meter, name, reqs, window, arrival, rate, idle
 
         await asyncio.gather(*(one(r, o) for r, o in zip(reqs, offsets)))
         e_end, t_end = meter.millijoules(), time.time()
+        trace = tracer.stop() if tracer else []
         state_after = meter.gpu_state()
 
     n = len(log)
@@ -316,7 +416,7 @@ async def run_replay_window(args, meter, name, reqs, window, arrival, rate, idle
         "power_limit_w": state_before["power_limit_w"],
         "other_procs": state_after["other_procs"],
     }
-    return row, log
+    return row, log, trace
 
 
 def save_row(path, row):
@@ -329,9 +429,26 @@ def save_row(path, row):
         writer.writerow(row)
 
 
+def save_details(csv_path, window_id, log, trace):
+    # Per-request timings and the power trace, both keyed by the window's row in the CSV.
+    if log:
+        with open(csv_path.removesuffix(".csv") + "_requests.jsonl", "a") as f:
+            for req in log:
+                f.write(json.dumps({"window_id": window_id, **req}) + "\n")
+    if trace:
+        path = csv_path.removesuffix(".csv") + "_trace.csv"
+        is_new = not os.path.exists(path)
+        with open(path, "a", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=["window_id", *trace[0]])
+            if is_new:
+                writer.writeheader()
+            writer.writerows({"window_id": window_id, **point} for point in trace)
+
+
 def print_row(i, total, row):
     warn = "   <-- cache mismatch, don't use this window" if row["cache_mismatches"] else ""
-    print(f"[{i}/{total}] {row['mode']:>4} L={row['L']:<5} out={row['out']:<4} c={row['conc']:<3} "
+    gaps = f"think={row['think']:g} p={row['prefixes']:<3}" if "think" in row else ""
+    print(f"[{i}/{total}] {row['mode']:>4} L={row['L']:<5} out={row['out']:<4} c={row['conc']:<3} {gaps}"
           f"rep={row['rep']}  n={row['n_requests']:<5} {row['seconds']:>6.1f}s  "
           f"{row['active_j_per_req']:.4f} J/req  cached {row['min_cached']}..{row['max_cached']}{warn}",
           flush=True)
@@ -375,6 +492,10 @@ def int_list(text):
     return [int(x) for x in text.split(",")]
 
 
+def float_list(text):
+    return [float(x) for x in text.split(",")]
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("cmd", choices=["check", "idle", "sweep", "replay"])
@@ -398,7 +519,12 @@ def main():
     p.add_argument("--workloads", default="", help="replay: comma-separated JSONL files from make_workloads.py")
     p.add_argument("--arrival", default="fixed,poisson", help="replay: fixed and/or poisson")
     p.add_argument("--rate", default="1,4", help="replay: requests per second")
+    p.add_argument("--think", default="0", help="sweep: seconds each client pauses after a response")
+    p.add_argument("--prefixes", default="1", help="sweep: number of distinct shared prefixes")
+    p.add_argument("--trace", type=float, default=0, help="sample power every this many seconds (0 = off)")
     args = p.parse_args()
+    # Extra columns only when a gap option is used, so appending to an older CSV still works.
+    args.gap_columns = float_list(args.think) != [0] or int_list(args.prefixes) != [1] or args.trace > 0
 
     global BACKEND
     BACKEND = args.backend
@@ -434,28 +560,31 @@ def main():
         req_log = args.csv.removesuffix(".csv") + "_requests.jsonl"
         print(f"{len(runs)} replay windows -> {args.csv}, requests -> {req_log}", flush=True)
         for i, (name, w, a, r) in enumerate(runs, 1):
-            row, log = asyncio.run(run_replay_window(args, meter, name, workloads[name][w], w, a, r, idle_w))
+            row, log, trace = asyncio.run(run_replay_window(args, meter, name, workloads[name][w], w, a, r, idle_w))
             save_row(args.csv, row)
-            with open(req_log, "a") as f:
-                for req in log:
-                    f.write(json.dumps({"window_id": row["window_id"], **req}) + "\n")
+            save_details(args.csv, row["window_id"], log, trace)
             print(f"[{i}/{len(runs)}] {name:>8} w={w} {a:>7} {r:g}/s  n={row['n_requests']}  "
                   f"{row['seconds']:>6.1f}s  hit {100 * row['hit_rate']:.0f}%  "
                   f"{row['active_j_per_req']:.3f} J/req", flush=True)
         return
 
-    windows = [(m, L, o, c, r)
+    windows = [(m, L, o, c, th, n, r)
                for m in modes for L in int_list(args.L) for o in int_list(args.out)
-               for c in int_list(args.conc) for r in range(args.repeats)
-               if not (m == "hit" and L == 0)]       # with no prefix, hit and miss are the same run
+               for c in int_list(args.conc) for th in float_list(args.think)
+               for n in int_list(args.prefixes) for r in range(args.repeats)
+               if not (m == "hit" and L == 0)        # with no prefix, hit and miss are the same run
+               and not (n > 1 and L == 0)]           # and there's nothing to have several of
     # Shuffled so slow drift (the GPU warming up over an hour, say) spreads across all
     # conditions instead of landing on whichever one happened to run last.
     random.Random(args.seed).shuffle(windows)
     print(f"{len(windows)} windows -> {args.csv}", flush=True)
 
-    for i, (mode, L, out_tokens, conc, rep) in enumerate(windows, 1):
-        row = asyncio.run(run_window(args, meter, mode, L, out_tokens, conc, rep, idle_w))
+    for i, (mode, L, out_tokens, conc, think, n_prefixes, rep) in enumerate(windows, 1):
+        row, log, trace = asyncio.run(run_window(args, meter, mode, L, out_tokens, conc, rep, idle_w,
+                                                 think, n_prefixes))
         save_row(args.csv, row)
+        if args.gap_columns:
+            save_details(args.csv, row["window_id"], log, trace)
         print_row(i, len(windows), row)
 
 

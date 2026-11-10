@@ -4,8 +4,10 @@ Mimics /generate (input_ids -> meta_info.cached_tokens), /flush_cache, /health,
 with a simple prefix cache, plus /mock_energy: a fake cumulative energy counter
 (60 W idle + fixed joules per fresh prefill token / cached token / output token).
 Expected D(L) for 1-token outputs is about 1 - CACHED_J/FRESH_J = 0.9.
+With --tail-w and --tail-s, power also stays tail-w above idle for up to tail-s seconds
+after the GPU goes quiet, a known answer for the gap experiments to recover.
 
-Usage: python mock_server.py [--disable-radix-cache] [--port 30000]
+Usage: python mock_server.py [--disable-radix-cache] [--port 30000] [--tail-w 40 --tail-s 0.5]
 """
 import argparse, asyncio, time
 from aiohttp import web
@@ -15,9 +17,18 @@ IDLE_W, FRESH_J, CACHED_J, OUT_J = 60.0, 0.002, 0.0002, 0.05
 ap = argparse.ArgumentParser()
 ap.add_argument("--disable-radix-cache", action="store_true")
 ap.add_argument("--port", type=int, default=30000)
+ap.add_argument("--tail-w", type=float, default=0.0)
+ap.add_argument("--tail-s", type=float, default=0.0)
 args = ap.parse_args()
 
-state = {"cache": [], "t0": time.time(), "work_J": 0.0}
+state = {"cache": [], "t0": time.time(), "work_J": 0.0, "busy": 0, "last_done": None, "tail_J": 0.0}
+
+
+def open_tail(now):
+    # Tail energy of the current quiet stretch, if the GPU is quiet.
+    if state["busy"] or state["last_done"] is None:
+        return 0.0
+    return args.tail_w * min(now - state["last_done"], args.tail_s)
 
 
 def match_len(ids):
@@ -40,7 +51,12 @@ async def generate(req):
     out = body["sampling_params"]["max_new_tokens"]
     cached = match_len(ids)
     fresh = len(ids) - cached
+    state["tail_J"] += open_tail(time.time())
+    state["busy"] += 1
     await asyncio.sleep(fresh * 2e-6 + out * 0.002)
+    state["busy"] -= 1
+    if not state["busy"]:
+        state["last_done"] = time.time()
     state["work_J"] += fresh * FRESH_J + cached * CACHED_J + out * OUT_J
     if not args.disable_radix_cache:
         state["cache"].append(list(ids))
@@ -58,7 +74,8 @@ async def health(_):
 
 
 async def energy(_):
-    j = IDLE_W * (time.time() - state["t0"]) + state["work_J"]
+    now = time.time()
+    j = IDLE_W * (now - state["t0"]) + state["work_J"] + state["tail_J"] + open_tail(now)
     return web.json_response({"energy_mJ": int(j * 1000)})
 
 
