@@ -122,13 +122,17 @@ def load_heldout(csv_path):
 def paired_test(diffs, blocks, rng, n=10_000):
     # Sign-flip permutation test on the mean paired difference. Windows replayed from the same
     # requests (same workload and window, other arrival or rate) are correlated, so their
-    # differences are summed into one block and flipped together.
+    # differences are summed into one block and flipped together. With few blocks every sign
+    # pattern is enumerated, so p is exact (its floor is 2 / 2^blocks); otherwise sampled.
     sums = defaultdict(float)
     for d, b in zip(diffs, blocks):
         sums[b] += d
     s = np.array(list(sums.values()))
     observed = abs(s.mean())
-    flips = rng.choice([-1, 1], size=(n, len(s)))
+    if len(s) <= 16:
+        flips = 1 - 2 * ((np.arange(2 ** len(s))[:, None] >> np.arange(len(s))) & 1)
+    else:
+        flips = rng.choice([-1, 1], size=(n, len(s)))
     return float(np.mean(np.abs((flips * s).mean(axis=1)) >= observed - 1e-12))
 
 
@@ -207,8 +211,15 @@ def main():
         print(f"  {v:<9} {rel(data):>5.1f}% {mae:>7.2f}{per_level}")
 
     coef = fit("explicit", data, concs)
+    # Bootstrap over windows for b's uncertainty, since a small negative b is what a free
+    # cached token plus noise looks like.
+    rng = np.random.default_rng(0)
+    boot = [fit("explicit", [data[i] for i in rng.integers(len(data), size=len(data))], concs)[1]
+            for _ in range(1000)]
+    lo, hi = np.percentile(boot, [2.5, 97.5])
     print(f"\nexplicit, fitted on everything: a {1e3 * coef[0]:.2f} mJ/fresh token, "
-          f"b {1e3 * coef[1]:.2f} mJ/cached token (b/a {coef[1] / coef[0]:.3f})")
+          f"b {1e3 * coef[1]:.2f} mJ/cached token [95% CI {1e3 * lo:.2f}, {1e3 * hi:.2f}] "
+          f"(b/a {coef[1] / coef[0]:.3f})")
     names = ["c"] if concs is None else [f"c[conc={k}]" for k in concs]
     names += ["d"]
     print("  " + ", ".join(f"{n} {1e3 * x:.4g} mJ" for n, x in zip(names, coef[2:])))

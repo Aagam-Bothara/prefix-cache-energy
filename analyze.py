@@ -6,15 +6,18 @@ Turns the results.csv written by harness.py into the numbers the report needs.
   delta_on     E_miss(L) - E_off(L): what having the cache on costs when nothing is reused
 
 E is the mean active energy per request over a cell's windows. The intervals are 95%
-bootstrap intervals over windows, so with only 3 windows per cell they're rough.
+t-intervals over window means (Welch-Satterthwaite degrees of freedom; delta method for D).
+A bootstrap would be too narrow here: 3 windows give only 10 distinct resamples per cell.
 
 Example: python analyze.py results.csv
 """
 import argparse
 import csv
-import random
+import math
 import statistics
 from collections import defaultdict
+
+import scipy.stats
 
 mean = statistics.fmean
 
@@ -34,18 +37,33 @@ def load(path, tag):
     return cells, dropped
 
 
-def bootstrap(stat, groups, rng, n=10_000):
-    # Resample each cell's windows on its own, recompute the statistic, take the middle 95%.
-    vals = sorted(stat(*[rng.choices(g, k=len(g)) for g in groups]) for _ in range(n))
-    return vals[int(0.025 * n)], vals[int(0.975 * n) - 1]
+def t_interval(est, groups, grads):
+    # 95% interval for a statistic of independent cell means, linearized as sum(grad * mean):
+    # its variance is sum(grad^2 * s^2 / n), degrees of freedom by Welch-Satterthwaite.
+    terms = [g * g * statistics.variance(x) / len(x) for g, x in zip(grads, groups)]
+    if not sum(terms):
+        return est, est
+    df = sum(terms) ** 2 / sum(t * t / (len(x) - 1) for t, x in zip(terms, groups))
+    half = scipy.stats.t.ppf(0.975, df) * math.sqrt(sum(terms))
+    return est - half, est + half
 
 
 def discount(miss, hit, miss0):
     return (mean(miss) - mean(hit)) / (mean(miss) - mean(miss0))
 
 
+def discount_ci(miss, hit, miss0):
+    m, h, z = mean(miss), mean(hit), mean(miss0)
+    grads = [(h - z) / (m - z) ** 2, -1 / (m - z), (m - h) / (m - z) ** 2]
+    return t_interval(discount(miss, hit, miss0), [miss, hit, miss0], grads)
+
+
 def saved(a, b):
     return mean(a) - mean(b)
+
+
+def saved_ci(a, b):
+    return t_interval(saved(a, b), [a, b], [1, -1])
 
 
 def main():
@@ -53,9 +71,7 @@ def main():
     p.add_argument("csv", nargs="?", default="results.csv")
     p.add_argument("--tag", default="main", help="rows used for D(L) and delta_on")
     p.add_argument("--reference-tag", default="reference", help="rows used for the noise floor")
-    p.add_argument("--seed", type=int, default=0)
     args = p.parse_args()
-    rng = random.Random(args.seed)
 
     ref, _ = load(args.csv, args.reference_tag)
     print("noise floor")
@@ -78,8 +94,8 @@ def main():
                 miss, hit = get("miss", L), get("hit", L)
                 if L == 0 or not (miss and hit):
                     continue
-                d_lo, d_hi = bootstrap(discount, [miss, hit, miss0], rng)
-                s_lo, s_hi = bootstrap(saved, [miss, hit], rng)
+                d_lo, d_hi = discount_ci(miss, hit, miss0)
+                s_lo, s_hi = saved_ci(miss, hit)
                 print(f"  L={L:<5} E_miss {mean(miss):.4f}  E_hit {mean(hit):.4f}  "
                       f"D {discount(miss, hit, miss0):.3f} [{d_lo:.3f}, {d_hi:.3f}]  "
                       f"saved/token {saved(miss, hit) / L:.3e} J [{s_lo / L:.3e}, {s_hi / L:.3e}]")
@@ -91,7 +107,7 @@ def main():
         if pairs:
             print(f"\ndelta_on = E_miss - E_off, out={out} c={conc}")
             for L, miss, off in pairs:
-                lo, hi = bootstrap(saved, [miss, off], rng)
+                lo, hi = saved_ci(miss, off)
                 print(f"  L={L:<5} {saved(miss, off):+.4f} J/req [{lo:+.4f}, {hi:+.4f}]  "
                       f"({100 * saved(miss, off) / mean(off):+.1f}% of off)")
 

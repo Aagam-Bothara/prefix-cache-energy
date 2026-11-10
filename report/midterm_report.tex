@@ -20,136 +20,136 @@ aboth@uic.edu}}
 
 \maketitle
 
-\section{Project Type and Status}
-This is a research project (individual). The question is unchanged: how much GPU energy does reusing a cached prefix actually save in SGLang~\cite{sglang}, and does an accounting model with an explicit cached-token cost predict energy better than cache-unaware, pricing-inspired, and FLOP-informed baselines? Table~\ref{tab:status} compares progress against the proposal milestones. The main change since the proposal is a precise definition of the experimental conditions (Section~\ref{sec:conditions}), written in response to the feedback that the cache-on versus cache-off comparison was unclear.
+\begin{abstract}
+On an A100, a cached prefix token costs under 0.4\% of a recomputed one, and enabling SGLang's radix cache costs nothing measurable when nothing is reused; output length, not prefix length, decides what fraction is saved. On held-out ShareGPT, agent, and RAG replays, cache-unaware energy accounting errs by 29--39\%; every cache-aware variant, by about 6--10\%.
+\end{abstract}
 
-\begin{table}[t]
-\caption{Progress against proposal milestones}
-\label{tab:status}
-\centering
-\footnotesize
-\begin{tabular}{@{}p{4.3cm}l@{}}
-\toprule
-Milestone (proposal) & Status at Nov 1 \\
-\midrule
-Harness, cache controls, noise floor & done \\
-Hit/miss verification per request & done \\
-Zero-hit control (cache on, no reuse) & done \\
-$D(L)$ sweep, Qwen-7B, 1-token out & done \\
-Full grid (out 128/512, conc.\ 4/16) & done: 4 of 4 cells \\
-PrefixBench-style vLLM reproduction & moved to Nov 2--8 \\
-\bottomrule
-\end{tabular}
-\end{table}
+\section{Project Type and Status}
+An individual research project; the questions are unchanged. RQ1: how much GPU energy does reusing a cached prefix actually save in SGLang~\cite{sglang}? RQ2: does an accounting model with an explicit cached-token cost predict energy better than cache-unaware, pricing-inspired, and FLOP-informed baselines? Prior energy studies compare cache settings~\cite{zine,prefixbench}; this project separates the cost of reuse from the cost of having the cache enabled, and tests whether accounting models need a cached-token cost at all. \textbf{Status at Nov 1.} All planned measurements are done, including November's: the $D(L)$ grid, a second model and GPU, the zero-hit control, the vLLM reproduction, and the held-out RQ2 evaluation. What remains is one open RQ2 discrepancy, figures, the presentation, and the final report. The main change, answering feedback that cache on vs.\ off was unclear, is a precise definition of the conditions (Section~\ref{sec:conditions}).
 
 \section{Clarifying the Experimental Conditions}
 \label{sec:conditions}
-The proposal used ``cache on'' and ``cache off'' loosely. Those words hide three separate things: whether the radix cache is enabled, whether a request's prefix is actually found in it, and side effects of the flag itself. I now separate them into three conditions (Table~\ref{tab:cond}). In all of them the normal per-request KV cache used during decoding stays on; only cross-request prefix reuse changes.
+``Cache on'' vs.\ ``off'' conflates whether the radix cache is enabled, whether a request's prefix is actually found in it, and side effects of the flag itself; Table~\ref{tab:cond} separates them. The per-request KV cache used in decoding stays on throughout; only cross-request reuse changes.
 
-\begin{table}[t]
-\caption{Measurement conditions. $L$ = shared-prefix length; last column is the expected \texttt{cached\_tokens} per request.}
+\begin{table}[!h]
+\caption{Measurement conditions. $L$ = shared-prefix length; last column is the expected \texttt{cached\_tokens} per request. Every window, in every condition, starts with one excluded warm-up request.}
 \label{tab:cond}
 \centering
 \footnotesize
-\begin{tabular}{@{}p{1.05cm}p{1.55cm}p{3.0cm}p{1.2cm}@{}}
+\begin{tabular}{@{}lllc@{}}
 \toprule
 Name & Radix cache & Prefix contents & Expected \\
 \midrule
 \textsc{Off}  & disabled & identical across requests & 0 \\
-\textsc{Miss} & enabled  & first token replaced by a per-request unique token, so no request matches another & 0 \\
-\textsc{Hit}  & enabled  & identical; warmed by one excluded request & $L$ \\
+\textsc{Miss} & enabled  & first token unique per request & 0 \\
+\textsc{Hit}  & enabled  & identical; warm-up inserts it & $L$ \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\textbf{Primary contrast: \textsc{Hit} vs.\ \textsc{Miss}.} Both run on the same server process with the same flags and the same token counts. The only difference is whether the prefix is found in the cache, so their energy difference is the value of reuse and nothing else. I redefine the discount as
+\textbf{Primary contrast: \textsc{Hit} vs.\ \textsc{Miss}.} Both run on the same server process with the same flags and token counts; only whether the prefix is found differs, so their gap is the value of reuse alone. I redefine the discount as
 \begin{equation}
 D(L) = \frac{E_{\textsc{miss}}(L) - E_{\textsc{hit}}(L)}{E_{\textsc{miss}}(L) - E_{\textsc{miss}}(0)},
 \label{eq:d}
 \end{equation}
 where $E$ is mean active GPU energy per request, and suffix length, output length, and concurrency are held fixed. $E_{\textsc{miss}}(0)$ is measured with the prefix removed. I also report energy saved per reused token, $(E_{\textsc{miss}}(L)-E_{\textsc{hit}}(L))/L$.
 
-\textbf{Secondary contrast: \textsc{Miss} vs.\ \textsc{Off}.} This is the zero-hit control from the proposal. It measures what enabling the cache costs when nothing is reused, $\Delta_{\text{on}}(L)=E_{\textsc{miss}}(L)-E_{\textsc{off}}(L)$, from tree insertion, matching, and eviction. If $\Delta_{\text{on}}$ is indistinguishable from zero, the ``turn caching on'' saving equals the reuse saving. If it is not, I report both. Zine et al.~\cite{zine} saw energy differences from the prefix-cache flag on a workload with no repeated prefixes, which is exactly the effect this control isolates.
+\textbf{Secondary contrast: \textsc{Miss} vs.\ \textsc{Off}.} The zero-hit control, $\Delta_{\text{on}}(L)=E_{\textsc{miss}}(L)-E_{\textsc{off}}(L)$, is what enabling the cache costs when nothing is reused (insertion, matching, eviction), the effect Zine et al.~\cite{zine} saw on a workload with no repeated prefixes.
 
-\textbf{Confounders held fixed.} (1) \emph{Scheduling policy.} When the radix cache is disabled, SGLang silently replaces cache-aware policies such as LPM with FCFS (\texttt{schedule\_policy.py}, \texttt{\_validate\_and\_adjust\_policy}). Without care, \textsc{Off} vs.\ \textsc{Hit} would compare two schedulers. I pin \texttt{-{}-schedule-policy fcfs} in every condition. (2) \emph{Exact token counts.} Requests are sent as token IDs to \texttt{/generate}, with no chat template, so prefix and suffix lengths are exact and no template tokens are accidentally shared. Each suffix also starts with a per-request unique token; with purely random tokens, two requests in a window can share a first token by chance and create a spurious 1-token hit. (3) \emph{Fixed work.} \texttt{ignore\_eos} with fixed \texttt{max\_new\_tokens}, greedy decoding, fixed chunked-prefill size, page size 1, and CUDA graphs on. (4) \emph{Cache state.} \texttt{/flush\_cache} before every window, then one excluded warm-up request in every condition, so all three pay the same first-request cost; in \textsc{Hit} this request also inserts the prefix. Its energy is recorded separately.
+\textbf{Confounders held fixed.} (1) \emph{Scheduling policy.} With the radix cache disabled, SGLang silently replaces cache-aware policies such as LPM with FCFS (\texttt{\_validate\_and\_adjust\_policy}), so \textsc{Off} vs.\ \textsc{Hit} could compare two schedulers. I pin \texttt{-{}-schedule-policy fcfs} everywhere. (2) \emph{Exact token counts.} Requests are token IDs sent to \texttt{/generate} with no chat template; each suffix starts with a per-request unique token, so no spurious 1-token hits. (3) \emph{Fixed work.} \texttt{ignore\_eos} with fixed \texttt{max\_new\_tokens}, greedy decoding, fixed chunked-prefill size, page size 1, CUDA graphs on. (4) \emph{Cache state.} \texttt{/flush\_cache} before every window, then one excluded warm-up request in every condition (in \textsc{Hit} it inserts the prefix).
 
-\textbf{Verification.} Every response's \texttt{meta\_info.cached\_tokens} is logged. A window is accepted only if every request matches its condition's expected count in Table~\ref{tab:cond}. Across all 273 A100 windows (25{,}915 \textsc{Hit} requests and 32{,}110 \textsc{Miss} and \textsc{Off} requests), every \textsc{Hit} request reported exactly $L$ cached tokens and every \textsc{Miss} and \textsc{Off} request reported 0, so no window was rejected.
+\textbf{Verification.} A window is accepted only if every response's \texttt{cached\_tokens} matches Table~\ref{tab:cond}. In all 1{,}016 synthetic windows (463{,}572 requests, both models, GPUs, and engines), every request matched.
 
 \section{Measurement Setup as Built}
-\textbf{Platform.} All Chameleon Cloud GPUs were reserved through November, so the main study runs on a rented RunPod A100 80\,GB SXM4, Secure Cloud, a whole GPU per pod, driver 595.91.07, CUDA 13.2, SGLang 0.5.21 (pinned), with the same pod configuration in every session. Before any run, I checked that NVML's energy counter agrees with its instantaneous power reading at idle (87.11\,W vs.\ 87.52\,W). I cannot lock clocks or the power limit on a rented pod, so I log both per window and repeat a fixed reference window at the start of every session to detect drift between sessions and physical GPUs. Model: Qwen2.5-7B-Instruct, BF16. RunPod does not offer the A30, so an A40 (48\,GB) serves as the second GPU. A short pilot on the A40 ran at its 300\,W power cap in every window, so it is used only for spot checks.
+\textbf{Platform.} Chameleon Cloud had no A100 free in late October and its GPUs were reserved Nov 8--15, during the measurements planned for November, so the study runs on rented whole RunPod A100 80\,GB SXM4 GPUs (SGLang 0.5.21). All energy is GPU energy from NVML; CPU, host memory, and the rest of the server are not measured. In every A100 session, NVML's energy counter agreed with its instantaneous power reading at idle to within 0.5\,W. Clocks and power limit cannot be locked on a rented pod, so both are logged per window, and a fixed reference window opens every session. RunPod's A100 SXM4 pods come with either a 400\,W or a 500\,W limit; all A100 results below are from 400\,W cards (a Qwen3 session on a 500\,W card, with a 60.8\,J reference window, was rerun). Models: Qwen2.5-7B-Instruct and Qwen3-8B, BF16; second GPU: A40 (48\,GB).
 
-\textbf{Harness.} A closed-loop load generator holds $c$ requests in flight and runs windows of at least 40 requests \emph{and} at least 30\,s, so short 1-token windows are not dominated by counter resolution. The harness reads NVML's cumulative energy counter directly at window boundaries. (My llmtrace tool samples power and only supports vLLM, so it is not used for the SGLang runs.) Active energy subtracts idle power (measured for 60\,s with the model loaded, before each block) times window duration. Run order is randomized across conditions and $L$. Each window logs SM clock, temperature, power limit, and any other GPU process.
+\textbf{Harness.} A closed-loop load generator holds $c$ requests in flight over windows of at least 40 requests \emph{and} 30\,s (10 requests for 512-token outputs at $c{=}1$, where one takes 5--6\,s), reading NVML's cumulative energy counter at window boundaries. Active energy subtracts idle power (60\,s with the model loaded, before each block) times duration. Run order is randomized; each window logs SM clock, temperature, power limit, and other GPU processes. It also drives vLLM~0.11.0 and replays held-out workloads open-loop. Code and results: \url{https://github.com/Aagam-Bothara/prefix-cache-energy}.
 
-\section{Preliminary Results}
+\section{RQ1 Results}
 
-\textbf{Noise floor.} Three repeats of an identical \textsc{Miss} window ($L{=}2048$, 1-token output, $c{=}1$) gave a coefficient of variation of 0.8\% in active energy per request. This sets the smallest saving I can resolve with three repeats. The same reference window gave 45.50\,J per request on the first A100 and 45.90\,J on the second, a 0.9\% difference, about the size of the noise floor.
+\textbf{Noise floor.} Within a session, the reference \textsc{Miss} window ($L{=}2048$, out 1, $c{=}1$) varied by 0.3--0.9\% (CV of active energy per request); session means stayed within 45.4--45.9\,J (Qwen2.5) and 50.0--50.4\,J (Qwen3) across all 400\,W sessions.
 
-\textbf{Zero-hit control.} $\Delta_{\text{on}}$ was +0.34\,J per request (95\% CI [$-0.39$, $+0.83$]) at $L{=}8192$, i.e., within the noise floor. Across all $L$ in the 1-token sweep, $\Delta_{\text{on}}$ stayed within $+0.9\%$ of $E_{\textsc{off}}$, and within $+2.7\%$ across the full grid (usually within 1\%). One caveat: \textsc{Miss} and \textsc{Off} need different server flags, so they run on two server processes, and a small $\Delta_{\text{on}}$ could partly be a restart effect.
+\textbf{Zero-hit control.} In the first sweep, \textsc{Miss} and \textsc{Off} ran on two server processes, and $\Delta_{\text{on}}$ stayed within $+2.7\%$ of $E_{\textsc{off}}$. To separate this from restart effects, cache-on and cache-off servers then alternated over 8 ABBA rounds, each a fresh server with its own idle measurement (Welch $t$-intervals over round means), at $L\in\{0, 2048, 8192\}$ with (out 1, $c{=}1$) and (out 128, $c{=}4$). $|\Delta_{\text{on}}|$ was at most 0.1\% on SGLang and 0.3\% on vLLM, and every 95\% CI on both engines includes zero, so the ``turn caching on'' saving equals the reuse saving; the earlier +2.7\% was most likely a restart effect. Filling the cache is free too: with 128- or 512-token outputs at $c{=}1$, the \textsc{Hit} warm-up request that inserts the prefix cost within 1\% of a \textsc{Miss} warm-up at the same $L$ (1532 vs.\ 1533\,J at $L{=}8192$, out 512). A cached prefix therefore pays for itself on its first reuse.
 
-\begin{table}[t]
-\caption{Preliminary $D(L)$: Qwen2.5-7B, A100, 1-token output, $c{=}1$. Mean of 3 windows; 95\% bootstrap CI.}
-\label{tab:dl}
-\centering
-\footnotesize
-\begin{tabular}{@{}rcccc@{}}
-\toprule
-$L$ & $E_{\textsc{miss}}$ (J) & $E_{\textsc{hit}}$ (J) & $D(L)$ & J saved / token \\
-\midrule
-512  & 15.55  & 6.73 & 0.986 {\scriptsize[0.983, 0.988]} & 0.0172 \\
-1024 & 27.28  & 6.76 & 0.993 {\scriptsize[0.992, 0.993]} & 0.0200 \\
-2048 & 45.87  & 6.91 & 0.992 {\scriptsize[0.991, 0.993]} & 0.0190 \\
-4096 & 89.74  & 7.07 & 0.994 {\scriptsize[0.994, 0.994]} & 0.0202 \\
-8192 & 172.27 & 7.35 & 0.995 {\scriptsize[0.995, 0.996]} & 0.0201 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\begin{table}[t]
-\caption{$D(L)$ across output length and concurrency: Qwen2.5-7B, A100, mean of 3 windows per condition. The out\,=\,512, $c{=}4$ cell ran on a second A100 in a later session; its 95\% CIs at $L\le1024$ are wide ([0.62, 0.98] and [0.91, 1.05]).}
+\begin{table*}[t]
+\caption{$D(L)$ across output length and concurrency: Qwen2.5-7B, A100 (400\,W), mean of 3 windows per condition. CIs in the text are 95\% $t$-intervals over window means (Welch degrees of freedom, delta method for $D$); 3 windows are too few for a bootstrap. $^\dagger$Not resolved: 10-request windows and 512 decode tokens leave CIs as wide as [0.49, 0.90] ($L{=}2048$). The out\,=\,512, $c{=}4$ cell ran in a separate session; a repeat at $L\le1024$ (4 windows) gave 0.903 {\scriptsize[0.70, 1.10]} and 0.859 {\scriptsize[0.77, 0.94]}.}
 \label{tab:grid}
 \centering
 \footnotesize
-\begin{tabular}{@{}rccccc@{}}
+\begin{tabular}{@{}rccccccccc@{}}
 \toprule
- & out 1 & \multicolumn{2}{c}{out 128} & \multicolumn{2}{c}{out 512} \\
-\cmidrule(lr){2-2}\cmidrule(lr){3-4}\cmidrule(lr){5-6}
-$L$ & $c{=}1$ & $c{=}4$ & $c{=}16$ & $c{=}4$ & $c{=}16$ \\
+ & \multicolumn{3}{c}{out 1} & \multicolumn{3}{c}{out 128} & \multicolumn{3}{c}{out 512} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}\cmidrule(lr){8-10}
+$L$ & $c{=}1$ & $c{=}4$ & $c{=}16$ & $c{=}1$ & $c{=}4$ & $c{=}16$ & $c{=}1^\dagger$ & $c{=}4$ & $c{=}16$ \\
 \midrule
-512  & 0.986 & 0.924 & 0.949 & 0.795 & 0.903 \\
-1024 & 0.993 & 0.918 & 0.968 & 0.973 & 0.921 \\
-2048 & 0.992 & 0.948 & 0.962 & 0.933 & 0.915 \\
-4096 & 0.994 & 0.949 & 0.966 & 0.865 & 0.903 \\
-8192 & 0.995 & 0.960 & 0.969 & 0.872 & 0.913 \\
+512  & 0.986 & 0.982 & 0.989 & 0.843 & 0.924 & 0.949 & n.r. & 0.795 & 0.903 \\
+1024 & 0.993 & 0.990 & 0.990 & 0.908 & 0.918 & 0.968 & n.r. & 0.973 & 0.921 \\
+2048 & 0.992 & 0.994 & 0.993 & 0.889 & 0.948 & 0.962 & n.r. & 0.933 & 0.915 \\
+4096 & 0.994 & 0.996 & 0.995 & 0.909 & 0.949 & 0.966 & n.r. & 0.865 & 0.903 \\
+8192 & 0.995 & 0.996 & 0.996 & 0.914 & 0.960 & 0.969 & n.r. & 0.872 & 0.913 \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\textbf{Discount curve.} With 1-token outputs, which isolate prefill, $E_{\textsc{miss}}$ grows from 15.6\,J ($L{=}512$) to 172.3\,J ($L{=}8192$) while $E_{\textsc{hit}}$ stays at 6.7--7.4\,J, so $D$ rises from 0.986 [0.980, 0.992] to 0.995 [0.995, 0.996] (Table~\ref{tab:grid}, first column). The saving is far outside the 0.9\% noise floor at every $L$. A pricing rule of $b=0.1a$~\cite{openai,anthropic} predicts $D\approx0.9$; the measured values are above this, since a cached token cost about 0.08\,mJ against about 20\,mJ for a recomputed one. The 20\,mJ is physically plausible: a fresh token needs about 14\,GFLOP ($2\times6.5$\,B parameters, plus attention), so even at the A100's 312\,TFLOPS BF16 peak, at these windows' 310\,W active power, it would cost about 14\,mJ; at $L\ge2048$ the windows ran at 190--220\,TFLOPS, 62--70\% of peak. Longer outputs lower $D$, because decoding still reads the prefix at equal cost in \textsc{Hit} and \textsc{Miss}: $D$ falls to 0.84--0.97 at 128 output tokens and 0.80--0.97 at 512. The energy saved per reused token stays between 0.016 and 0.028\,J in every cell; $D$ shrinks only because the rest of the request grows. \emph{When the saving becomes small:} in Eq.~2 (Section~\ref{sec:rq2}), reuse saves $(a-b)L$, while the denominator of Eq.~\ref{eq:d} is $aL + d\,n_{\text{out}}L$, since every output token also reads the prefix, so $D\approx a/(a+d\,n_{\text{out}})$, roughly independent of $L$. The fitted $a$ and $d$, pooled over all loads, put $D$ below 0.9 beyond about 200 output tokens on Qwen2.5 and 110 on Qwen3. The formula omits load, since $c_k$ cancels, but load matters: at 128 output tokens the saving per reused token barely changes from $c{=}1$ to $c{=}16$, while the rest of the denominator shrinks about threefold, so $D$ is 0.84--0.91 at $c{=}1$ and 0.95--0.97 at $c{=}16$. Measured $D$ was below 0.9 only at 128 tokens with $c{=}1$ and 512 with $c{=}4$.
+
+\textbf{Where the saving comes from.} Mostly time, not power: at $L{=}8192$ with 1-token outputs, \textsc{Miss} and \textsc{Off} drew about 397\,W at about 1260\,MHz and \textsc{Hit} about 363\,W at the full 1410\,MHz, but each request finished far sooner. With 128 or 512 output tokens, all conditions held 1410\,MHz at 345--394\,W.
+
+\textbf{Second model: Qwen3-8B.} At five load levels (out 1 at $c\in\{1,4\}$; out 128 at $c\in\{1,4,16\}$), the pattern is the same: $D$ is 0.979--0.997 with 1-token outputs and 0.80--0.96 with 128 output tokens. Each reused token saves 0.020--0.026\,J, 6--29\% more than on Qwen2.5-7B in the same cell (median 13\%).
+
+\textbf{Second GPU: A40.} At $L\in\{2048, 8192\}$ with (out 1, $c{=}1$) and (out 128, $c{=}16$), the A40's $D$ matches the A100's to within 0.003, but the joules saved per reused token are 26--36\% higher (0.024--0.029\,J), so energy constants must be fitted per GPU.
+
+\textbf{vLLM reproduction.} Following PrefixBench~\cite{prefixbench}, I sent sequential requests sharing an 8192-token prefix (3 windows of $\ge$40 requests and $\ge$30\,s) to one vLLM~0.11.0 server with prefix caching and one with \texttt{-{}-no-enable-prefix-caching}, serving Qwen2.5-7B. This single pair was not repeated, so there is no CI over servers. Cache on with reuse vs.\ off saves 97.3\% for 1-token outputs (176.2\,J $\to$ 4.7\,J per request) and 33.6\% for 128-token outputs (541.6\,J $\to$ 359.4\,J). The per-token saving (0.021\,J) and $D$ (0.995 and 0.928) match SGLang closely. PrefixBench reports 443 vs.\ 337\,J per request on an H100 (Qwen2-7B, same prefix), a 24\% saving, without stating the output length, so the comparison is only qualitative. This run's \textsc{Miss} vs.\ \textsc{Off} gap ($-0.4\%$ to $-1.7\%$) would echo Zine et al.~\cite{zine}, but alternating rounds put vLLM's $\Delta_{\text{on}}$ at $-0.3\%$ to $0.0\%$: most likely a restart effect too.
+
+\section{RQ2 Results: Accounting Models}
+\label{sec:rq2}
+\textbf{Model.} All four variants are Eq.~2 of the proposal,
+\begin{equation}
+\hat E = a\,n_{\text{fresh}} + b\,n_{\text{cached}} + c_k\,n_{\text{out}} + d\,n_{\text{out}}\,n_{\text{ctx}},
+\end{equation}
+with $n_{\text{ctx}}$ the mean context during decoding (prompt plus half the output). They differ only in the prefill part: \emph{explicit} fits $a$ and $b$ freely; \emph{cache-unaware} forces $b=a$; \emph{pricing} forces $b=0.1a$; \emph{FLOP-informed} replaces $a\,n_{\text{fresh}}+b\,n_{\text{cached}}$ by $k$ times the remaining prefill FLOPs. The load term, one $c_k$ per fitted concurrency $k$ interpolated in $\log k$, reflects batching sharing a decode step's weight reads; without it every variant errs by over 65\%. Coefficients are fitted by least squares on synthetic windows only (387 over 9 load levels for Qwen2.5, 201 over 5 for Qwen3).
+
+\textbf{Held-out workloads.} ShareGPT conversations (mean prompt 684 tokens, output 257); agent requests sharing one of four $\sim$3{,}000-token tool prompts (3{,}110, 73); and RAG questions over Zipf-popular LongBench documents (5{,}493, 21). Each has 3 windows of 120 requests, replayed open-loop from an empty cache with fixed-rate and Poisson arrivals at 1 and 4 requests/s: 36 windows per model, 56--96\% of prompt tokens cached. A window's prediction sums per-request estimates, each at its own load.
+
+\begin{table}[t]
+\caption{RQ2 mean absolute error. Synthetic: leave one $L$ out; held-out: 36 replay windows per model, fitted on synthetic data. The two 156.9\% entries are a coincidence (156.86 and 156.90).}
+\label{tab:rq2}
+\centering
+\footnotesize
+\setlength{\tabcolsep}{4.5pt}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+ & \multicolumn{2}{c}{Qwen2.5-7B} & \multicolumn{2}{c}{Qwen3-8B} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}
+Variant & synthetic & held-out & synthetic & held-out \\
+\midrule
+cache-unaware ($b=a$)   & 156.9\% & 29.2\% & 156.9\% & 38.9\% \\
+pricing ($b=0.1a$)      & 25.8\%  & 7.0\%  & 23.1\%  & 7.6\% \\
+FLOP-informed           & 7.0\%   & 9.3\%  & 10.2\%  & 6.1\% \\
+explicit ($a$, $b$ fit) & 9.5\%   & 10.3\% & 10.2\%  & 6.4\% \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\textbf{Discount curve.} Table~\ref{tab:dl} gives $D(L)$ with 1-token outputs, which isolates prefill. $D$ rises from 0.986 at $L{=}512$ to 0.995 at $L{=}8192$, approaching 1; the saving is far outside the 0.8\% noise floor at every $L$. With 1-token outputs, a pricing rule of $b=0.1a$ predicts $D\approx0.9$; the measured values are above this, since a cached token cost about 0.08\,mJ against about 20\,mJ for a recomputed one. Longer outputs are expected to lower $D$, because decoding still reads the cached prefix; those cells are complete (Table~\ref{tab:grid}). $D$ falls to 0.92--0.97 at 128 output tokens and 0.87--0.93 at 512 (for $L\ge2048$), while the energy saved per reused token stays between 0.017 and 0.028\,J in every cell.
-
-\textbf{Where the saving comes from.} The saving is mostly time, not power. In the 1-token sweep at $L{=}8192$, \textsc{Miss} and \textsc{Off} windows drew about 397\,W of the A100's 400\,W limit, with the SM clock pulled down to about 1260\,MHz, while \textsc{Hit} drew about 363\,W at the full 1410\,MHz. Power fell by under 10\%, but each request finished far sooner. At $L{=}8192$ the grid cells drew 356--395\,W, and every logged clock was 1410\,MHz.
-
-\textbf{Reproduction.} Moved to Nov 2--8; I prioritized the condition controls above after the proposal feedback.
+\textbf{Findings.} (1) Ignoring the cache is clearly wrong. On held-out windows, explicit's error is 10.3\% vs.\ 29.2\% for cache-unaware on Qwen2.5 and 6.4\% vs.\ 38.9\% on Qwen3. Both give $p=2/512\approx0.004$, the minimum for an exact paired sign-flip test over 9 replay blocks. This is RQ2's primary comparison; the tests among cache-aware variants below are exploratory. (2) A cached token's fitted cost is near zero: $b=-0.36$\,mJ (95\% bootstrap CI over windows [$-0.67$, $-0.10$]) against $a=20.9$\,mJ per fresh token on Qwen2.5, and $b=-0.07$\,mJ ([$-0.33$, $+0.14$]) against $a=23.4$\,mJ on Qwen3. A negative cost is unphysical (other terms likely absorb a small effect), but $|b|<2\%$ of $a$ either way, and RQ1's direct 0.08\,mJ is under 0.4\%. A cached token is much closer to free than the 10\% that API pricing commonly charges~\cite{openai,anthropic}. (3) The cache-aware variants are close. On Qwen2.5, FLOP-informed beats explicit by 1.0 point ($p=0.004$) and pricing beats it by 3.3 ($p=0.020$); on Qwen3, neither difference is clear ($p=0.44$ and $0.09$). FLOP-informed has no cached-token parameter yet does at least as well as fitting $b$: counting the prefill FLOPs executed suffices, so a cached token's cost need not be measured. Synthetic errors are larger because 1-token \textsc{Hit} windows cost only a few joules. (4) Explicit and FLOP-informed underpredict RAG at 1 request/s by 19--30\% on both models, against mostly 1--10\% on agent and ShareGPT; pricing's cached-token charge happens to offset this, and a per-request constant does not remove it. My hypothesis: RAG reuses many cached documents; synthetic \textsc{Hit} windows reuse one.
 
 \section{Changes from the Proposal}
-(1) The primary comparison is now \textsc{Hit} vs.\ \textsc{Miss} in a single server configuration, and the radix-off condition is a control rather than the baseline for $D$. (2) Requests are sent as raw token IDs. (3) The scheduling policy is pinned. (4) Windows have a minimum duration as well as a minimum request count. The research questions, models, baselines, and RQ2 accounting model (Eq.~2 of the proposal) are unchanged. (5) The platform moved from Chameleon Cloud to a RunPod A100 because every Chameleon GPU was reserved through November. Section~III describes how I validated the rented GPU's energy counter and how I control for session-to-session drift. (6) RunPod does not offer the A30, so the second-GPU checks move to an A40.
+RQs, baselines, and Eq.~2 are unchanged. (1)--(2) The conditions and controls of Section~\ref{sec:conditions}. (3) The platform moved from Chameleon Cloud to RunPod A100s, for the reason given above; RunPod has no A30, so the second GPU is an A40. (4) Qwen3-8B replaces Llama-3.1-8B-Instruct: close in size, no gated-model access. (5) NVML's energy counter is read directly instead of through llmtrace, which samples power and supports only vLLM.
 
 \section{Plan to December 6 and Risks}
-\textbf{Nov 2--8:} PrefixBench-style reproduction on vLLM; rerun $\Delta_{\text{on}}$ with \textsc{Miss} and \textsc{Off} alternating across several server restarts, so restart effects average out; repeat the out\,=\,512, $c{=}4$ cell at $L\le1024$ to narrow its CIs.
-\textbf{Nov 9--15:} Llama-3.1-8B-Instruct on the A100; A40 checks at $L\in\{2048, 8192\}$.
-\textbf{Nov 16--22:} held-out workloads (ShareGPT, shared agent system prompts, LongBench RAG templates) with fixed-rate and Poisson arrivals; fit the four accounting variants on synthetic data only.
-\textbf{Nov 23--26:} evaluate RQ2 on held-out windows; release the harness on GitHub.
-\textbf{Nov 27--Dec 3:} presentation. \textbf{Dec 4--6:} final report.
-
-\textbf{Risks.} (1) If $\Delta_{\text{on}}$ is non-zero, $D$ and the ``turn caching on'' saving diverge; I will report both rather than pick one. (2) At high concurrency, unique \textsc{Miss} prefixes can fill the KV pool and trigger eviction. I flush between windows, and an eviction inside a \textsc{Hit} window would show up as a request with fewer than $L$ cached tokens and reject the window. None has occurred so far; if one does at $L{=}8192$, I will reduce the window size. (3) The additive model may miss batching effects; I will report errors by load level instead of a single aggregate. (4) A rented pod may land on a different physical GPU each session; the per-session reference window lets me treat sessions as blocks in the analysis, and I will report it if drift exceeds the noise floor.
+\textbf{Nov 2--15:} test the RAG hypothesis with a synthetic cell reusing one of many cached documents; figures ($D(L)$ by output length and load; held-out error by workload). \textbf{Nov 16--Dec 3:} harness documentation; presentation. \textbf{Dec 4--6:} final report.
+\textbf{Risks and limitations.} An unexplained RAG gap will be reported per workload, not tuned away on held-out data. Synthetic windows never batch hits with misses; the replays do, but that effect is not isolated. Synthetic prompts are random token IDs, and power depends partly on the data, so joules per token on natural text may differ (the real-text replays partly cover this).
 
 \section*{Use of AI Tools}
-Claude (Anthropic) was used to help structure this report, check SGLang's scheduling code for cache-dependent behavior, and edit language. All measurements and numbers come from my own runs.
+Claude (Anthropic) was used to help structure this report, check SGLang's scheduling code for cache-dependent behavior, edit language, and write and debug parts of the measurement harness and analysis scripts, including a mock server for testing them. All measurements and numbers come from my own runs.
 
 \begin{thebibliography}{9}
 \footnotesize
 \bibitem{prefixbench} O. Shewale, D. Kumar, and D. K. Yadav, ``PrefixBench-H100: Characterizing prefix reuse and time-to-first-token in H100 LLM serving,'' arXiv:2609.19657, 2026.
 \bibitem{zine} N. Zine \emph{et al.}, ``Attention to detail: Evaluating energy, performance, and accuracy trade-offs across vLLM configurations,'' arXiv:2607.09172v2, 2026.
 \bibitem{sglang} L. Zheng \emph{et al.}, ``SGLang: Efficient execution of structured language model programs,'' in \emph{Proc. NeurIPS}, vol. 37, 2024.
+\bibitem{openai} OpenAI, ``API pricing,'' \url{https://openai.com/api/pricing/}, accessed Oct. 2026.
+\bibitem{anthropic} Anthropic, ``Prompt caching,'' Claude API documentation, \url{https://platform.claude.com/docs/en/build-with-claude/prompt-caching}, accessed Oct. 2026.
 \end{thebibliography}
 
 \end{document}
